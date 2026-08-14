@@ -147,6 +147,18 @@
 </head>
 <body>
     <div id="root"></div>
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18",
+        "react-dom": "https://esm.sh/react-dom@18",
+        "react-dom/client": "https://esm.sh/react-dom@18/client",
+        "lucide-react": "https://esm.sh/lucide-react?deps=react@18",
+        "recharts": "https://esm.sh/recharts?deps=react@18,react-dom@18",
+        "@google/genai": "https://esm.sh/@google/genai"
+      }
+    }
+    </script>
     <script type="module" src="./index.tsx"></script>
-<script type="module" src="/index.js"></script></body>
+</body>
 </html>

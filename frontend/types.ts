@@ -35,11 +35,7 @@ export interface Resume {
 }
 
 export interface Preferences {
-    desiredRoles: string;
-    locations: string;
-    salaryExpectation: string;
-    dealbreakers: string;
-    idealCulture: string;
+    petalsExercise: string;
 }
 
 export interface ContextResource {

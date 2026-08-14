@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store';
-import { Card, Button, Input, Textarea } from '../components/UI';
+import { Card, Button, Textarea } from '../components/UI';
 import { Settings, Save, Info, BookOpen, Plus, Trash2, HardDrive } from 'lucide-react';
 
 export const PreferencesView: React.FC = () => {
@@ -96,46 +96,16 @@ export const PreferencesView: React.FC = () => {
             <Card className="p-6 space-y-6 mb-12">
                 <div className="bg-sage-soft text-forest p-4 rounded-lg flex items-start text-sm">
                     <Info className="w-5 h-5 mr-3 flex-shrink-0 mt-0.5" />
-                    <p>Be as specific as possible. The more detail you provide, the better the AI can analyze job descriptions against your goals.</p>
+                    <p>Paste your completed Petals Exercise below. The AI uses this as its primary context when scoring job matches and answering questions in the companion.</p>
                 </div>
 
                 <div className="space-y-4">
-                    <Input 
-                        label="Desired Roles" 
-                        placeholder="e.g., Senior Frontend Engineer, React Developer"
-                        value={form.desiredRoles}
-                        onChange={e => setForm({...form, desiredRoles: e.target.value})}
-                    />
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input 
-                            label="Preferred Locations / Setup" 
-                            placeholder="e.g., Remote only, Hybrid in NYC"
-                            value={form.locations}
-                            onChange={e => setForm({...form, locations: e.target.value})}
-                        />
-                        <Input 
-                            label="Salary Expectations" 
-                            placeholder="e.g., $150k base + equity"
-                            value={form.salaryExpectation}
-                            onChange={e => setForm({...form, salaryExpectation: e.target.value})}
-                        />
-                    </div>
-
-                    <Textarea 
-                        label="Dealbreakers (Red Flags)" 
-                        rows={3}
-                        placeholder="e.g., Mandatory 5 days in office, legacy tech stack, poor work-life balance..."
-                        value={form.dealbreakers}
-                        onChange={e => setForm({...form, dealbreakers: e.target.value})}
-                    />
-
-                    <Textarea 
-                        label="Ideal Company Culture & Environment" 
-                        rows={4}
-                        placeholder="e.g., Collaborative team, strong engineering practices (CI/CD, testing), values mentorship..."
-                        value={form.idealCulture}
-                        onChange={e => setForm({...form, idealCulture: e.target.value})}
+                    <Textarea
+                        label="Completed Petals Exercise"
+                        rows={16}
+                        placeholder="Paste your completed Petals Exercise here. This is your single source of truth for what your ideal job looks like — the AI will use this as context when analysing job matches and answering questions."
+                        value={form.petalsExercise}
+                        onChange={e => setForm({...form, petalsExercise: e.target.value})}
                     />
                 </div>
 

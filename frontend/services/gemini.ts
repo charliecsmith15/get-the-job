@@ -12,16 +12,12 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
     const contextText = contextResources.map(c => `--- ${c.title} ---\n${c.content}`).join('\n\n');
 
     const prompt = `
-    Analyze the following job description against my career preferences and additional context.
-    
-    My Core Preferences:
-    - Desired Roles: ${preferences.desiredRoles}
-    - Locations: ${preferences.locations}
-    - Salary Expectation: ${preferences.salaryExpectation}
-    - Dealbreakers: ${preferences.dealbreakers}
-    - Ideal Culture: ${preferences.idealCulture}
+    Analyze the following job description against my ideal job profile and additional context.
 
-    Additional Context & Resources (Defining exactly what I'm looking for):
+    My Ideal Job Profile (Petals Exercise):
+    ${preferences.petalsExercise || 'Not provided.'}
+
+    Additional Context & Resources:
     ${contextText || 'None provided.'}
 
     Job Description:
@@ -158,12 +154,8 @@ export const chatWithCompanion = async (
     You have access to the user's job search data. Use this context to provide personalized, highly relevant advice.
     Keep your answers concise, encouraging, and actionable.
 
-    --- USER PREFERENCES ---
-    Roles: ${appState.preferences.desiredRoles}
-    Locations: ${appState.preferences.locations}
-    Salary: ${appState.preferences.salaryExpectation}
-    Dealbreakers: ${appState.preferences.dealbreakers}
-    Culture: ${appState.preferences.idealCulture}
+    --- IDEAL JOB PROFILE (PETALS EXERCISE) ---
+    ${appState.preferences.petalsExercise || 'Not provided.'}
 
     --- CONTEXT RESOURCES ---
     ${appState.contextResources.map((c: any) => `${c.title}:\n${c.content}`).join('\n\n')}

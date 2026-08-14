@@ -32,11 +32,7 @@ interface AppContextType extends AppState {
 }
 
 const initialPreferences: Preferences = {
-    desiredRoles: "Senior Frontend Engineer, Full Stack Developer",
-    locations: "Remote, Hybrid (New York)",
-    salaryExpectation: "$140k - $180k",
-    dealbreakers: "No equity, mandatory 5 days in office, legacy tech stack (jQuery, AngularJS)",
-    idealCulture: "Collaborative, values work-life balance, strong engineering practices (CI/CD, testing)."
+    petalsExercise: '',
 };
 
 const mockJobs: Job[] = [

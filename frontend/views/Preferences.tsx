@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Input, Textarea } from '../components/UI';
-import { Settings, Save, Info, BookOpen, Plus, Trash2 } from 'lucide-react';
+import { Settings, Save, Info, BookOpen, Plus, Trash2, HardDrive } from 'lucide-react';
 
 export const PreferencesView: React.FC = () => {
     const { preferences, updatePreferences, contextResources, addContextResource, deleteContextResource } = useAppStore();
@@ -13,6 +13,54 @@ export const PreferencesView: React.FC = () => {
     // Context Resource State
     const [isAddingContext, setIsAddingContext] = useState(false);
     const [newContext, setNewContext] = useState({ title: '', content: '' });
+    const [isImportingFromDrive, setIsImportingFromDrive] = useState(false);
+
+    const importFileFromDrive = async (file: any, accessToken: string) => {
+        setIsImportingFromDrive(true);
+        try {
+            const isDoc = file.mimeType === 'application/vnd.google-apps.document';
+            const url = isDoc
+                ? `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`
+                : `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+            const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+            if (!response.ok) throw new Error('Failed to fetch file content');
+            const content = await response.text();
+            addContextResource({ title: file.name, content });
+        } catch (err) {
+            console.error('Drive import failed:', err);
+        } finally {
+            setIsImportingFromDrive(false);
+        }
+    };
+
+    const handleGoogleDriveImport = () => {
+        const g = (window as any).google;
+        if (!g?.accounts?.oauth2) {
+            alert('Google Sign-In is still loading. Please wait a moment and try again.');
+            return;
+        }
+        const tokenClient = g.accounts.oauth2.initTokenClient({
+            client_id: process.env.GOOGLE_CLIENT_ID || '',
+            scope: 'https://www.googleapis.com/auth/drive.readonly',
+            callback: (tokenResponse: any) => {
+                if (tokenResponse.error || !tokenResponse.access_token) return;
+                (window as any).gapi.load('picker', () => {
+                    const picker = new g.picker.PickerBuilder()
+                        .addView(new g.picker.DocsView().setIncludeFolders(false))
+                        .setOAuthToken(tokenResponse.access_token)
+                        .setDeveloperKey(process.env.GOOGLE_API_KEY || '')
+                        .setCallback(async (data: any) => {
+                            if (data.action === g.picker.Action.PICKED) {
+                                await importFileFromDrive(data.docs[0], tokenResponse.access_token);
+                            }
+                        })
+                        .build();
+                    picker.setVisible(true);
+                });
+            },
+        });
+        tokenClient.requestAccessToken();
+    };
 
     const handleSavePreferences = () => {
         updatePreferences(form);
@@ -106,7 +154,12 @@ export const PreferencesView: React.FC = () => {
                         </p>
                     </div>
                     {!isAddingContext && (
-                        <Button icon={Plus} onClick={() => setIsAddingContext(true)}>Add Resource</Button>
+                        <div className="flex space-x-2">
+                            <Button variant="secondary" icon={HardDrive} onClick={handleGoogleDriveImport} disabled={isImportingFromDrive}>
+                                {isImportingFromDrive ? 'Importing...' : 'Import from Drive'}
+                            </Button>
+                            <Button icon={Plus} onClick={() => setIsAddingContext(true)}>Add Resource</Button>
+                        </div>
                     )}
                 </div>
 

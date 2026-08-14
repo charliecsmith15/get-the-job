@@ -24,13 +24,15 @@ steps:
       - '--port'
       - '8080'
       - '--set-env-vars'
-      - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION}'
+      - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION},GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID},GOOGLE_API_KEY=${_GOOGLE_API_KEY}'
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus'
 
 substitutions:
   _GOOGLE_CLOUD_LOCATION: us-central1
+  _GOOGLE_CLIENT_ID: ''
+  _GOOGLE_API_KEY: ''
 
 options:
   logging: CLOUD_LOGGING_ONLY

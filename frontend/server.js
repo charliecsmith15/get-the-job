@@ -37,6 +37,8 @@ app.use(async (req, res, next) => {
             'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
             'process.env.GOOGLE_CLOUD_PROJECT': JSON.stringify(process.env.GOOGLE_CLOUD_PROJECT || ''),
             'process.env.GOOGLE_CLOUD_LOCATION': JSON.stringify(process.env.GOOGLE_CLOUD_LOCATION || 'us-central1'),
+            'process.env.GOOGLE_CLIENT_ID': JSON.stringify(process.env.GOOGLE_CLIENT_ID || ''),
+            'process.env.GOOGLE_API_KEY': JSON.stringify(process.env.GOOGLE_API_KEY || ''),
         };
         const result = await transform(source, {
             loader,

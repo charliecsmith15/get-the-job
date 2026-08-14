@@ -64,19 +64,19 @@
     }
   }
 
+  const BACKEND_URL = 'https://jobsearch-backend-948539209903.us-central1.run.app';
+
   console.log('[Vertex AI Proxy Shim] Initialized. Intercepting for Cloud AI API URLs');
 
-  
+
   window.WebSocket = function(url, protocols) {
     const inputUrl = typeof url === 'string' ? url : (url instanceof URL ? url.href : null);
 
     if (inputUrl && isValidUrl(inputUrl)) {
-      
+
       console.log('[Vertex AI Proxy Shim] Intercepted Vertex WebSocket request:', inputUrl);
       const targetUrl = encodeURIComponent(inputUrl);
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      const proxyUrl = `${protocol}//${host}/ws-proxy?target=${targetUrl}`;
+      const proxyUrl = `${BACKEND_URL.replace('https://', 'wss://')}/ws-proxy?target=${targetUrl}`;
       return new originalWebSocket(proxyUrl, protocols);
     }
     return new originalWebSocket(url, protocols);
@@ -119,7 +119,7 @@
         };
 
         console.log('[Vertex AI Proxy Shim] Fetching from local Node.js backend: /api-proxy');
-        const proxyResponse = await fetch('/api-proxy', proxyFetchOptions);
+        const proxyResponse = await fetch(`${BACKEND_URL}/api-proxy`, proxyFetchOptions);
 
         if (proxyResponse.status === 401) {
             console.error('[Vertex Proxy Shim] Local Node.js backend returned 401. Authentication may be needed.');

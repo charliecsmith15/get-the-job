@@ -34,7 +34,9 @@ app.use(async (req, res, next) => {
     try {
         const source = await fs.readFile(filePath, 'utf8');
         const define = {
-            'process.env.API_KEY': JSON.stringify(process.env.API_KEY || '')
+            'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
+            'process.env.GOOGLE_CLOUD_PROJECT': JSON.stringify(process.env.GOOGLE_CLOUD_PROJECT || ''),
+            'process.env.GOOGLE_CLOUD_LOCATION': JSON.stringify(process.env.GOOGLE_CLOUD_LOCATION || 'us-central1'),
         };
         const result = await transform(source, {
             loader,

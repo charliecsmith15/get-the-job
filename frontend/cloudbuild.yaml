@@ -23,12 +23,14 @@ steps:
       - '--allow-unauthenticated'
       - '--port'
       - '8080'
-      # Pass the Gemini API Key from Cloud Build triggers to Cloud Run
       - '--set-env-vars'
-      - 'API_KEY=${_API_KEY}'
+      - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION}'
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus'
+
+substitutions:
+  _GOOGLE_CLOUD_LOCATION: us-central1
 
 options:
   logging: CLOUD_LOGGING_ONLY

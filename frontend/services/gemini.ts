@@ -3,7 +3,11 @@ import { Preferences, Resume, ContextResource } from '../types';
 
 // Initialize the Gemini client
 // Note: In a real app, ensure process.env.API_KEY is available in the environment.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '', vertexai: true });
+const ai = new GoogleGenAI({
+  vertexai: true,
+  project: process.env.GOOGLE_CLOUD_PROJECT,
+  location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
+});
 
 export const analyzeJobMatch = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[]) => {
     if (!process.env.API_KEY) {

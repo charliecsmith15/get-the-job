@@ -6,12 +6,14 @@
  */
 import 'dotenv/config';
 import express from 'express';
+import cors from 'cors';
 import { GoogleAuth } from 'google-auth-library';
 import fetch from 'node-fetch';
 import rateLimit from 'express-rate-limit';
 import { WebSocketServer, WebSocket } from 'ws';
 
 const app = express();
+app.use(cors({ origin: 'https://careernexus-948539209903.us-central1.run.app' }));
 app.use(express.json({limit: process?.env?.API_PAYLOAD_MAX_SIZE || "7mb"}));
 
 const PORT = process?.env?.PORT || process?.env?.API_BACKEND_PORT || 8080;

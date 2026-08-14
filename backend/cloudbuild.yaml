@@ -1,9 +1,9 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/jobsearch-backend', 'backend/']
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/jobsearch-backend', 'backend/']
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/jobsearch-backend']
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/jobsearch-backend']
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
@@ -12,7 +12,7 @@ steps:
       - 'deploy'
       - 'jobsearch-backend'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/jobsearch-backend'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/jobsearch-backend'
       - '--region'
       - 'us-central1'
       - '--platform'
@@ -26,7 +26,7 @@ steps:
       - 'PROXY_HEADER=proxy-header:latest'
 
 images:
-  - 'gcr.io/$PROJECT_ID/jobsearch-backend'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/jobsearch-backend'
 
 substitutions:
   _GOOGLE_CLOUD_LOCATION: us-central1

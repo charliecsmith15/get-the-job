@@ -1,12 +1,12 @@
 steps:
   # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/careernexus', 'frontend/']
-  
-  # Push the image to Google Container Registry
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus', 'frontend/']
+
+  # Push the image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/careernexus']
-  
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus']
+
   # Deploy to Google Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
@@ -15,7 +15,7 @@ steps:
       - 'deploy'
       - 'careernexus'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/careernexus'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus'
       - '--region'
       - 'us-central1'
       - '--platform'
@@ -28,7 +28,7 @@ steps:
       - 'API_KEY=${_API_KEY}'
 
 images:
-  - 'gcr.io/$PROJECT_ID/careernexus'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus'
 
 options:
   logging: CLOUD_LOGGING_ONLY

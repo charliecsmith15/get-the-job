@@ -17,7 +17,7 @@ export const Sidebar: React.FC = () => {
     ];
 
     return (
-        <div className="w-64 bg-forest text-cream flex flex-col h-screen sticky top-0 shadow-xl z-10">
+        <div className="hidden md:flex w-64 bg-forest text-cream flex-col h-screen sticky top-0 shadow-xl z-10">
             <div className="p-6 flex items-center space-x-3 text-paper">
                 <div className="bg-wood p-2 rounded-lg">
                     <Briefcase className="w-6 h-6" />

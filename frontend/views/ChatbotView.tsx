@@ -46,13 +46,14 @@ export const ChatbotView: React.FC = () => {
         setIsLoading(true);
 
         try {
-            // Pass the current state to the gemini service
             const state = {
                 jobs: store.jobs,
                 notes: store.notes,
                 resumes: store.resumes,
                 preferences: store.preferences,
-                contextResources: store.contextResources
+                contextResources: store.contextResources,
+                journalEntries: store.journalEntries,
+                interviewQuestions: store.interviewQuestions,
             };
             
             // We only pass previous messages to history, excluding the one we just added to UI
@@ -102,20 +103,20 @@ export const ChatbotView: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col crm-enter max-w-5xl mx-auto w-full pb-8 relative">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-ink flex items-center">
-                    <Bot className="w-7 h-7 mr-3 text-wood" />
+        <div className="h-full flex flex-col crm-enter max-w-5xl mx-auto w-full relative">
+            <div className="mb-4 sm:mb-6">
+                <h1 className="text-xl sm:text-2xl font-bold text-ink flex items-center">
+                    <Bot className="w-6 h-6 sm:w-7 sm:h-7 mr-3 text-wood" />
                     AI Career Companion
                 </h1>
-                <p className="text-taupe mt-2">
+                <p className="text-taupe mt-1 text-sm hidden sm:block">
                     Chat with your personalized AI assistant. It has full context of your job board, notes, resumes, and preferences to give you tailored advice.
                 </p>
             </div>
 
-            <Card className="flex-1 flex flex-col min-h-[500px] overflow-hidden shadow-sm border-sand relative">
+            <Card className="flex-1 flex flex-col min-h-0 overflow-hidden shadow-sm border-sand relative">
                 {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-cream crm-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 bg-cream crm-scrollbar">
                     {messages.map((msg, idx) => (
                         <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[80%] rounded-2xl px-5 py-4 text-sm ${

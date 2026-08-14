@@ -64,20 +64,20 @@ export const Chatbot: React.FC = () => {
 
     return (
         <>
-            {/* FAB */}
+            {/* FAB — desktop only */}
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="fixed bottom-6 right-6 w-14 h-14 bg-brand-600 text-white rounded-full shadow-lg hover:bg-brand-700 hover:scale-105 transition-all flex items-center justify-center z-50"
+                    className="hidden md:flex fixed bottom-6 right-6 w-14 h-14 bg-brand-600 text-white rounded-full shadow-lg hover:bg-brand-700 hover:scale-105 transition-all items-center justify-center z-50"
                     title="Chat with AI Companion"
                 >
                     <MessageCircle className="w-6 h-6" />
                 </button>
             )}
 
-            {/* Chat Window */}
+            {/* Chat Window — desktop only */}
             {isOpen && (
-                <Card className="fixed bottom-6 right-6 w-96 h-[600px] max-h-[80vh] flex flex-col shadow-2xl z-50 border-slate-200 animate-in slide-in-from-bottom-4 duration-300">
+                <Card className="hidden md:flex fixed bottom-6 right-6 w-96 h-[600px] max-h-[80vh] flex-col shadow-2xl z-50 border-slate-200 animate-in slide-in-from-bottom-4 duration-300">
                     {/* Header */}
                     <div className="bg-slate-900 text-white p-4 flex justify-between items-center rounded-t-xl">
                         <div className="flex items-center space-x-2">

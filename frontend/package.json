@@ -4,11 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "node server.js",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "express": "latest",
+    "esbuild": "latest",
     "react": "latest",
     "react-dom": "latest",
     "lucide-react": "latest",

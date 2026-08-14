@@ -17,7 +17,9 @@ export const DeveloperAPI: React.FC = () => {
             notes: store.notes,
             resumes: store.resumes,
             preferences: store.preferences,
-            contextResources: store.contextResources
+            contextResources: store.contextResources,
+            journalEntries: store.journalEntries,
+            interviewQuestions: store.interviewQuestions,
         };
         const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -140,13 +142,68 @@ CREATE TABLE context_resources (
 
 CREATE TABLE preferences (
     id INT PRIMARY KEY DEFAULT 1,
-    desiredRoles TEXT,
-    locations TEXT,
-    salaryExpectation TEXT,
-    dealbreakers TEXT,
-    idealCulture TEXT
+    petalsExercise TEXT
+);
+
+-- Search Journal: daily notes fed into AI context
+CREATE TABLE journal_entries (
+    id VARCHAR(50) PRIMARY KEY,
+    date DATE NOT NULL,
+    content TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Interview Prep: Q&A pairs fed into AI context
+CREATE TABLE interview_questions (
+    id VARCHAR(50) PRIMARY KEY,
+    question TEXT NOT NULL,
+    response TEXT,
+    category VARCHAR(100) DEFAULT 'General',
+    dateAdded TIMESTAMP DEFAULT NOW()
 );`}
                             </code>
+                        </div>
+
+                        <div className="mt-6 pt-6 border-t border-sand">
+                            <h3 className="text-sm font-semibold text-ink mb-2">Required API Endpoints</h3>
+                            <p className="text-xs text-taupe mb-3">Your backend must expose the following REST endpoints. The app calls these when SQL sync is enabled.</p>
+                            <div className="bg-forest p-4 rounded-lg overflow-x-auto">
+                                <code className="text-xs text-sage-soft font-mono whitespace-pre">
+{`-- Standard resources (jobs, notes, resumes, context, preferences)
+GET    /api/jobs                     → list all
+POST   /api/jobs                     → create
+PUT    /api/jobs/:id                 → update
+DELETE /api/jobs/:id                 → delete
+
+GET    /api/notes                    → list all
+POST   /api/notes                    → create
+DELETE /api/notes/:id                → delete
+
+GET    /api/resumes                  → list all
+POST   /api/resumes                  → create
+PUT    /api/resumes/:id              → update
+DELETE /api/resumes/:id              → delete
+
+GET    /api/context                  → list all
+POST   /api/context                  → create
+DELETE /api/context/:id              → delete
+
+GET    /api/preferences              → get (single row, id=1)
+PUT    /api/preferences              → upsert
+
+-- Search Journal
+GET    /api/journal                  → list all entries
+POST   /api/journal                  → create entry
+PUT    /api/journal/:id              → update entry
+DELETE /api/journal/:id              → delete entry
+
+-- Interview Prep
+GET    /api/interview-questions      → list all questions
+POST   /api/interview-questions      → create question
+PUT    /api/interview-questions/:id  → update question
+DELETE /api/interview-questions/:id  → delete question`}
+                                </code>
+                            </div>
                         </div>
                     </div>
                 </Card>

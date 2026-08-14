@@ -114,13 +114,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 apiClient.getNotes().catch(() => []),
                 apiClient.getResumes().catch(() => []),
                 apiClient.getContextResources().catch(() => []),
-                apiClient.getPreferences().catch(() => null)
-            ]).then(([j, n, r, c, p]) => {
+                apiClient.getPreferences().catch(() => null),
+                apiClient.getJournalEntries().catch(() => []),
+                apiClient.getInterviewQuestions().catch(() => []),
+            ]).then(([j, n, r, c, p, je, iq]) => {
                 if (j.length) setJobs(j);
                 if (n.length) setNotes(n);
                 if (r.length) setResumes(r);
                 if (c.length) setContextResources(c);
                 if (p && Object.keys(p).length > 0) setPreferences(p);
+                if (je.length) setJournalEntries(je);
+                if (iq.length) setInterviewQuestions(iq);
                 setSyncStatus('idle');
             }).catch(err => {
                 console.error("Failed to fetch from SQL backend:", err);
@@ -308,28 +312,60 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    const addJournalEntry = (entryData: Omit<JournalEntry, 'id'>) => {
-        setJournalEntries(prev => [{ ...entryData, id: generateId() }, ...prev]);
+    const addJournalEntry = async (entryData: Omit<JournalEntry, 'id'>) => {
+        const newEntry: JournalEntry = { ...entryData, id: generateId() };
+        setJournalEntries(prev => [newEntry, ...prev]);
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.createJournalEntry(newEntry); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
     };
 
-    const updateJournalEntry = (id: string, updates: Partial<JournalEntry>) => {
+    const updateJournalEntry = async (id: string, updates: Partial<JournalEntry>) => {
         setJournalEntries(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.updateJournalEntry(id, updates); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
     };
 
-    const deleteJournalEntry = (id: string) => {
+    const deleteJournalEntry = async (id: string) => {
         setJournalEntries(prev => prev.filter(e => e.id !== id));
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.deleteJournalEntry(id); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
     };
 
-    const addInterviewQuestion = (data: Omit<InterviewQuestion, 'id' | 'dateAdded'>) => {
-        setInterviewQuestions(prev => [{ ...data, id: generateId(), dateAdded: new Date().toISOString() }, ...prev]);
+    const addInterviewQuestion = async (data: Omit<InterviewQuestion, 'id' | 'dateAdded'>) => {
+        const newQ: InterviewQuestion = { ...data, id: generateId(), dateAdded: new Date().toISOString() };
+        setInterviewQuestions(prev => [newQ, ...prev]);
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.createInterviewQuestion(newQ); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
     };
 
-    const updateInterviewQuestion = (id: string, updates: Partial<InterviewQuestion>) => {
+    const updateInterviewQuestion = async (id: string, updates: Partial<InterviewQuestion>) => {
         setInterviewQuestions(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q));
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.updateInterviewQuestion(id, updates); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
     };
 
-    const deleteInterviewQuestion = (id: string) => {
+    const deleteInterviewQuestion = async (id: string) => {
         setInterviewQuestions(prev => prev.filter(q => q.id !== id));
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.deleteInterviewQuestion(id); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
     };
 
     const navigate = (view: ViewState, jobId?: string) => {

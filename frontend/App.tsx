@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AppProvider, useAppStore } from './store';
 import { Sidebar } from './components/Sidebar';
+import { LoginScreen } from './components/LoginScreen';
 import { Dashboard } from './views/Dashboard';
 import { JobBoard } from './views/JobBoard';
 import { JobDetail } from './views/JobDetail';
@@ -8,6 +9,8 @@ import { ResumeManager } from './views/ResumeManager';
 import { PreferencesView } from './views/Preferences';
 import { DeveloperAPI } from './views/DeveloperAPI';
 import { ChatbotView } from './views/ChatbotView';
+
+const ALLOWED_EMAILS = (process.env.ALLOWED_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
 
 const MainContent: React.FC = () => {
     const { currentView } = useAppStore();
@@ -35,11 +38,51 @@ const MainContent: React.FC = () => {
     );
 };
 
+type AuthState = 'checking' | 'unauthenticated' | 'authorized' | 'denied';
+
+const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [authState, setAuthState] = useState<AuthState>('checking');
+
+    useEffect(() => {
+        const saved = sessionStorage.getItem('careernexus_auth');
+        setAuthState(saved && ALLOWED_EMAILS.includes(saved) ? 'authorized' : 'unauthenticated');
+    }, []);
+
+    const handleSignIn = useCallback((email: string) => {
+        if (ALLOWED_EMAILS.includes(email)) {
+            sessionStorage.setItem('careernexus_auth', email);
+            setAuthState('authorized');
+        } else {
+            setAuthState('denied');
+        }
+    }, []);
+
+    if (authState === 'checking') return null;
+
+    if (authState === 'authorized') return <>{children}</>;
+
+    if (authState === 'denied') return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-cream">
+            <div className="crm-card rounded-2xl p-10 flex flex-col items-center max-w-sm w-full mx-4 text-center">
+                <h1 className="text-xl font-bold text-ink mb-2">Access Denied</h1>
+                <p className="text-taupe text-sm mb-6">Your Google account is not authorized to access this app.</p>
+                <button onClick={() => setAuthState('unauthenticated')} className="text-sm text-wood underline">
+                    Try a different account
+                </button>
+            </div>
+        </div>
+    );
+
+    return <LoginScreen clientId={process.env.GOOGLE_CLIENT_ID || ''} onSignIn={handleSignIn} />;
+};
+
 const App: React.FC = () => {
     return (
-        <AppProvider>
-            <MainContent />
-        </AppProvider>
+        <AuthGate>
+            <AppProvider>
+                <MainContent />
+            </AppProvider>
+        </AuthGate>
     );
 };
 

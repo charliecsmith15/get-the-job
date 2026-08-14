@@ -43,7 +43,7 @@ app.use(async (req, res, next) => {
 app.use(express.static(__dirname));
 
 // SPA Fallback: Redirect all unknown routes to index.html
-app.get('*', (req, res) => {
+app.get('/{*path}', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 

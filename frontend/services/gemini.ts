@@ -9,10 +9,6 @@ const ai = new GoogleGenAI({
 });
 
 export const analyzeJobMatch = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[]) => {
-    if (!process.env.API_KEY) {
-        throw new Error("API_KEY is not set. AI features are disabled.");
-    }
-
     const contextText = contextResources.map(c => `--- ${c.title} ---\n${c.content}`).join('\n\n');
 
     const prompt = `
@@ -73,10 +69,6 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
 };
 
 export const tailorResumeSuggestion = async (jobDescription: string, baseResume: Resume) => {
-     if (!process.env.API_KEY) {
-        throw new Error("API_KEY is not set. AI features are disabled.");
-    }
-
     const prompt = `
     I am applying for a job. Please review my current resume and the job description, and suggest specific improvements or tailoring I should make to my resume to increase my chances.
 
@@ -103,10 +95,6 @@ export const tailorResumeSuggestion = async (jobDescription: string, baseResume:
 }
 
 export const generateTailoredResume = async (jobDescription: string, baseResume: Resume) => {
-    if (!process.env.API_KEY) {
-       throw new Error("API_KEY is not set. AI features are disabled.");
-   }
-
    const prompt = `
    I am applying for a job. Please rewrite and tailor my current resume to perfectly match the provided job description. 
    Highlight the most relevant experience, adjust keywords to match the job description, and ensure the formatting remains clean Markdown.
@@ -143,10 +131,6 @@ export const generateTailoredResume = async (jobDescription: string, baseResume:
 }
 
 export const generateInterviewQuestions = async (jobDescription: string) => {
-     if (!process.env.API_KEY) {
-        throw new Error("API_KEY is not set. AI features are disabled.");
-    }
-
     const prompt = `Based on the following job description, generate 5 highly relevant interview questions they might ask me, and provide a brief tip on how to answer each.
     
     Job Description:
@@ -169,10 +153,6 @@ export const chatWithCompanion = async (
     history: { role: 'user' | 'model', text: string }[],
     appState: any
 ) => {
-    if (!process.env.API_KEY) {
-        throw new Error("API_KEY is not set. AI features are disabled.");
-    }
-
     const systemInstruction = `
     You are an expert AI career coach and job search companion.
     You have access to the user's job search data. Use this context to provide personalized, highly relevant advice.

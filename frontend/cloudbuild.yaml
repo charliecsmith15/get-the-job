@@ -7,23 +7,19 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus']
 
-  # Deploy to Google Cloud Run
+  # Deploy to Google Cloud Run (bash wrapper avoids gcloud dict-arg comma parsing issues)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
+    entrypoint: bash
     args:
-      - 'run'
-      - 'deploy'
-      - 'careernexus'
-      - '--image'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--port'
-      - '8080'
-      - '--set-env-vars=^|^GOOGLE_CLOUD_PROJECT=$PROJECT_ID|GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION}|GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}|GOOGLE_API_KEY=${_GOOGLE_API_KEY}'
+      - '-c'
+      - |
+        gcloud run deploy careernexus \
+          --image "us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus" \
+          --region us-central1 \
+          --platform managed \
+          --allow-unauthenticated \
+          --port 8080 \
+          --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION},GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID},GOOGLE_API_KEY=${_GOOGLE_API_KEY}"
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus'

@@ -5,9 +5,7 @@ import { Preferences, Resume, ContextResource } from '../types';
 // Note: In a real app, ensure process.env.API_KEY is available in the environment.
 const ai = new GoogleGenAI({
   vertexai: true,
-  project: process.env.GOOGLE_CLOUD_PROJECT,
-  location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
-  apiKey: process.env.API_KEY || 'proxy-handled',
+  apiKey: process.env.API_KEY || 'proxy-placeholder',
 });
 
 export const analyzeJobMatch = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[]) => {

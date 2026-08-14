@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareerNexus - Job Search Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: 'var(--ink)',
+                        forest: 'var(--forest)',
+                        'forest-soft': 'var(--forest-soft)',
+                        cream: 'var(--cream)',
+                        paper: 'var(--paper)',
+                        sand: 'var(--sand)',
+                        taupe: 'var(--taupe)',
+                        wood: 'var(--wood)',
+                        'wood-dark': 'var(--wood-dark)',
+                        sage: 'var(--sage)',
+                        'sage-soft': 'var(--sage-soft)',
+                        danger: 'var(--danger)',
+                    }
+                }
+            }
+        }
+    </script>
+        <style>
+        :root {
+          --ink: #1f2922;
+          --forest: #24342a;
+          --forest-soft: #31473a;
+          --cream: #f5f0e6;
+          --paper: #fffdf8;
+          --sand: #e9e0d0;
+          --taupe: #9a8d7a;
+          --wood: #b7844d;
+          --wood-dark: #8d6036;
+          --sage: #7f927c;
+          --sage-soft: #dce5da;
+          --danger: #9d4c45;
+        }
+
+        * {
+          box-sizing: border-box;
+        }
+
+        html {
+          background: var(--cream);
+        }
+
+        body {
+          margin: 0;
+          background:
+            radial-gradient(circle at 8% 0%, rgba(183, 132, 77, 0.12), transparent 24rem),
+            radial-gradient(circle at 95% 18%, rgba(127, 146, 124, 0.12), transparent 28rem),
+            var(--cream);
+          color: var(--ink);
+          font-family: Arial, Helvetica, sans-serif;
+          min-height: 100vh;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+          font: inherit;
+        }
+
+        button {
+          cursor: pointer;
+        }
+
+        ::selection {
+          background: rgba(183, 132, 77, 0.28);
+        }
+
+        .crm-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(154, 141, 122, 0.5) transparent;
+        }
+
+        .crm-scrollbar::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+
+        .crm-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(154, 141, 122, 0.45);
+          border-radius: 999px;
+        }
+
+        .crm-grid {
+          background-image:
+            linear-gradient(rgba(36, 52, 42, 0.028) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(36, 52, 42, 0.028) 1px, transparent 1px);
+          background-size: 28px 28px;
+        }
+
+        .crm-focus:focus {
+          border-color: rgba(183, 132, 77, 0.8);
+          box-shadow: 0 0 0 4px rgba(183, 132, 77, 0.13);
+          outline: none;
+        }
+
+        .crm-card {
+          border: 1px solid rgba(154, 141, 122, 0.22);
+          background: rgba(255, 253, 248, 0.9);
+          box-shadow:
+            0 1px 1px rgba(31, 41, 34, 0.03),
+            0 18px 45px rgba(31, 41, 34, 0.055);
+          backdrop-filter: blur(16px);
+        }
+
+        .crm-card-hover {
+          transition:
+            transform 180ms ease,
+            border-color 180ms ease,
+            box-shadow 180ms ease;
+        }
+
+        .crm-card-hover:hover {
+          transform: translateY(-2px);
+          border-color: rgba(183, 132, 77, 0.38);
+          box-shadow:
+            0 1px 1px rgba(31, 41, 34, 0.03),
+            0 24px 56px rgba(31, 41, 34, 0.085);
+        }
+
+        @keyframes crm-enter {
+          from {
+            opacity: 0;
+            transform: translateY(8px) scale(0.995);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .crm-enter {
+          animation: crm-enter 220ms ease-out both;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+<script type="module" src="/index.js"></script></body>
+</html>

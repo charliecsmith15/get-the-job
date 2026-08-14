@@ -9,32 +9,42 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // Middleware to transpile TypeScript/TSX on the fly
-// This allows us to keep the exact ESM + importmap architecture while running in a standard browser
 app.use(async (req, res, next) => {
-    if (req.path.endsWith('.tsx') || req.path.endsWith('.ts')) {
-        try {
-            const filePath = path.join(__dirname, req.path);
-            const source = await fs.readFile(filePath, 'utf8');
-            
-            // Inject process.env.API_KEY into the frontend code at runtime
-            const define = {
-                'process.env.API_KEY': JSON.stringify(process.env.API_KEY || '')
-            };
+    let filePath = path.join(__dirname, req.path);
+    let loader = null;
 
-            const result = await transform(source, {
-                loader: req.path.endsWith('.tsx') ? 'tsx' : 'ts',
-                format: 'esm',
-                target: 'es2020',
-                define
-            });
-            
-            res.type('application/javascript').send(result.code);
-        } catch (err) {
-            console.error(`Error transpiling ${req.path}:`, err);
-            // Fallback to next middleware on error
-            next();
-        }
+    if (req.path.endsWith('.tsx')) {
+        loader = 'tsx';
+    } else if (req.path.endsWith('.ts')) {
+        loader = 'ts';
     } else {
+        // Resolve extension-less imports (e.g. ./App → ./App.tsx)
+        for (const [ext, l] of [['.tsx', 'tsx'], ['.ts', 'ts']]) {
+            try {
+                await fs.access(filePath + ext);
+                filePath = filePath + ext;
+                loader = l;
+                break;
+            } catch {}
+        }
+    }
+
+    if (!loader) return next();
+
+    try {
+        const source = await fs.readFile(filePath, 'utf8');
+        const define = {
+            'process.env.API_KEY': JSON.stringify(process.env.API_KEY || '')
+        };
+        const result = await transform(source, {
+            loader,
+            format: 'esm',
+            target: 'es2020',
+            define
+        });
+        res.type('application/javascript').send(result.code);
+    } catch (err) {
+        console.error(`Error transpiling ${req.path}:`, err);
         next();
     }
 });

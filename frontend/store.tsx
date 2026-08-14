@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useMemo } from 'react';
-import { Job, Note, Resume, Preferences, ContextResource, ViewState, DbConfig, SyncStatus } from './types';
+import { Job, Note, Resume, Preferences, ContextResource, ViewState, DbConfig, SyncStatus, JournalEntry, InterviewQuestion } from './types';
 import { createApiClient } from './services/api';
 
 interface AppState {
@@ -8,6 +8,8 @@ interface AppState {
     resumes: Resume[];
     preferences: Preferences;
     contextResources: ContextResource[];
+    journalEntries: JournalEntry[];
+    interviewQuestions: InterviewQuestion[];
     currentView: ViewState;
     selectedJobId: string | null;
     dbConfig: DbConfig;
@@ -26,6 +28,12 @@ interface AppContextType extends AppState {
     updatePreferences: (prefs: Preferences) => void;
     addContextResource: (resource: Omit<ContextResource, 'id' | 'dateAdded'>) => void;
     deleteContextResource: (id: string) => void;
+    addJournalEntry: (entry: Omit<JournalEntry, 'id'>) => void;
+    updateJournalEntry: (id: string, updates: Partial<JournalEntry>) => void;
+    deleteJournalEntry: (id: string) => void;
+    addInterviewQuestion: (q: Omit<InterviewQuestion, 'id' | 'dateAdded'>) => void;
+    updateInterviewQuestion: (id: string, updates: Partial<InterviewQuestion>) => void;
+    deleteInterviewQuestion: (id: string) => void;
     navigate: (view: ViewState, jobId?: string) => void;
     importData: (data: any) => void;
     updateDbConfig: (config: DbConfig) => void;
@@ -84,6 +92,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [resumes, setResumes] = useState<Resume[]>(mockResumes);
     const [preferences, setPreferences] = useState<Preferences>(initialPreferences);
     const [contextResources, setContextResources] = useState<ContextResource[]>(mockContextResources);
+    const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+    const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>([]);
     const [currentView, setCurrentView] = useState<ViewState>('dashboard');
     const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
     
@@ -298,6 +308,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
+    const addJournalEntry = (entryData: Omit<JournalEntry, 'id'>) => {
+        setJournalEntries(prev => [{ ...entryData, id: generateId() }, ...prev]);
+    };
+
+    const updateJournalEntry = (id: string, updates: Partial<JournalEntry>) => {
+        setJournalEntries(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+    };
+
+    const deleteJournalEntry = (id: string) => {
+        setJournalEntries(prev => prev.filter(e => e.id !== id));
+    };
+
+    const addInterviewQuestion = (data: Omit<InterviewQuestion, 'id' | 'dateAdded'>) => {
+        setInterviewQuestions(prev => [{ ...data, id: generateId(), dateAdded: new Date().toISOString() }, ...prev]);
+    };
+
+    const updateInterviewQuestion = (id: string, updates: Partial<InterviewQuestion>) => {
+        setInterviewQuestions(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q));
+    };
+
+    const deleteInterviewQuestion = (id: string) => {
+        setInterviewQuestions(prev => prev.filter(q => q.id !== id));
+    };
+
     const navigate = (view: ViewState, jobId?: string) => {
         setCurrentView(view);
         if (jobId !== undefined) {
@@ -330,10 +364,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return (
         <AppContext.Provider value={{
-            jobs, notes, resumes, preferences, contextResources, currentView, selectedJobId, dbConfig, syncStatus,
+            jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions,
+            currentView, selectedJobId, dbConfig, syncStatus,
             addJob, updateJob, deleteJob, addNote, deleteNote,
             addResume, updateResume, deleteResume, updatePreferences: updatePreferencesState,
-            addContextResource, deleteContextResource, navigate, importData, updateDbConfig
+            addContextResource, deleteContextResource,
+            addJournalEntry, updateJournalEntry, deleteJournalEntry,
+            addInterviewQuestion, updateInterviewQuestion, deleteInterviewQuestion,
+            navigate, importData, updateDbConfig
         }}>
             {children}
         </AppContext.Provider>

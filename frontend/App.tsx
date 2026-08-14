@@ -9,6 +9,8 @@ import { ResumeManager } from './views/ResumeManager';
 import { PreferencesView } from './views/Preferences';
 import { DeveloperAPI } from './views/DeveloperAPI';
 import { ChatbotView } from './views/ChatbotView';
+import { JournalView } from './views/Journal';
+import { InterviewPrepView } from './views/InterviewPrep';
 
 const ALLOWED_EMAILS = (process.env.ALLOWED_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
 
@@ -24,6 +26,8 @@ const MainContent: React.FC = () => {
             case 'resumes': return <ResumeManager />;
             case 'preferences': return <PreferencesView />;
             case 'developer': return <DeveloperAPI />;
+            case 'journal': return <JournalView />;
+            case 'interview-prep': return <InterviewPrepView />;
             default: return <Dashboard />;
         }
     };

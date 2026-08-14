@@ -149,6 +149,16 @@ export const chatWithCompanion = async (
     history: { role: 'user' | 'model', text: string }[],
     appState: any
 ) => {
+    const recentJournal = (appState.journalEntries || [])
+        .sort((a: any, b: any) => b.date.localeCompare(a.date))
+        .slice(0, 14)
+        .map((e: any) => `${e.date}: ${e.content}`)
+        .join('\n\n');
+
+    const interviewQAs = (appState.interviewQuestions || [])
+        .map((q: any) => `Q: ${q.question}\nA: ${q.response}`)
+        .join('\n\n');
+
     const systemInstruction = `
     You are an expert AI career coach and job search companion.
     You have access to the user's job search data. Use this context to provide personalized, highly relevant advice.
@@ -158,7 +168,13 @@ export const chatWithCompanion = async (
     ${appState.preferences.petalsExercise || 'Not provided.'}
 
     --- CONTEXT RESOURCES ---
-    ${appState.contextResources.map((c: any) => `${c.title}:\n${c.content}`).join('\n\n')}
+    ${appState.contextResources.map((c: any) => `${c.title}:\n${c.content}`).join('\n\n') || 'None.'}
+
+    --- RECENT SEARCH JOURNAL (last 14 entries) ---
+    ${recentJournal || 'No journal entries yet.'}
+
+    --- INTERVIEW PREPARATION Q&A ---
+    ${interviewQAs || 'No interview questions added yet.'}
 
     --- CURRENT JOBS ---
     ${appState.jobs.map((j: any) => `- ${j.title} at ${j.company} (Status: ${j.status})`).join('\n')}

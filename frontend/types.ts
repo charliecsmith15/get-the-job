@@ -45,7 +45,21 @@ export interface ContextResource {
     dateAdded: string;
 }
 
-export type ViewState = 'dashboard' | 'chatbot' | 'jobs' | 'job-detail' | 'resumes' | 'preferences' | 'developer';
+export interface JournalEntry {
+    id: string;
+    date: string;
+    content: string;
+}
+
+export interface InterviewQuestion {
+    id: string;
+    question: string;
+    response: string;
+    category: string;
+    dateAdded: string;
+}
+
+export type ViewState = 'dashboard' | 'chatbot' | 'jobs' | 'job-detail' | 'resumes' | 'preferences' | 'developer' | 'journal' | 'interview-prep';
 
 export interface DbConfig {
     enabled: boolean;

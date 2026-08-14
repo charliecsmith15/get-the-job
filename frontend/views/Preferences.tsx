@@ -18,9 +18,13 @@ export const PreferencesView: React.FC = () => {
     const importFileFromDrive = async (file: any, accessToken: string) => {
         setIsImportingFromDrive(true);
         try {
-            const isDoc = file.mimeType === 'application/vnd.google-apps.document';
-            const url = isDoc
-                ? `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain`
+            const exportMimeTypes: Record<string, string> = {
+                'application/vnd.google-apps.document': 'text/plain',
+                'application/vnd.google-apps.spreadsheet': 'text/csv',
+            };
+            const exportMime = exportMimeTypes[file.mimeType];
+            const url = exportMime
+                ? `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=${exportMime}`
                 : `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
             const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
             if (!response.ok) throw new Error('Failed to fetch file content');

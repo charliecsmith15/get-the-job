@@ -99,7 +99,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     
     const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
     const [dbConfig, setDbConfig] = useState<DbConfig>(() => {
-        const saved = localStorage.getItem('careernexus_db_config');
+        const saved = localStorage.getItem('getthejob_db_config');
         return saved ? JSON.parse(saved) : { enabled: false, url: 'http://localhost:3000/api' };
     });
 
@@ -136,7 +136,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const updateDbConfig = (config: DbConfig) => {
         setDbConfig(config);
-        localStorage.setItem('careernexus_db_config', JSON.stringify(config));
+        localStorage.setItem('getthejob_db_config', JSON.stringify(config));
     };
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -385,7 +385,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Expose API to window for MCP / external tools
     useEffect(() => {
-        window.CareerNexusAPI = {
+        window.GetTheJobAPI = {
             getState: () => ({ jobs, notes, resumes, preferences, contextResources }),
             importData,
             addJob,

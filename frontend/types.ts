@@ -70,6 +70,6 @@ export type SyncStatus = 'idle' | 'syncing' | 'error';
 
 declare global {
     interface Window {
-        CareerNexusAPI: any;
+        GetTheJobAPI: any;
     }
 }

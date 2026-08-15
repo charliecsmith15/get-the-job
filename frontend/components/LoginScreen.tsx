@@ -38,7 +38,7 @@ export const LoginScreen: React.FC<Props> = ({ clientId, onSignIn }) => {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-cream">
             <div className="crm-card rounded-2xl p-10 flex flex-col items-center max-w-sm w-full mx-4">
-                <h1 className="text-2xl font-bold text-ink mb-1">CareerNexus</h1>
+                <h1 className="text-2xl font-bold text-ink mb-1">Get the Job</h1>
                 <p className="text-taupe text-sm mb-8 text-center">Sign in with your Google account to access your job search hub.</p>
                 <div id="google-signin-btn" />
                 {!gisReady && <p className="text-taupe text-xs mt-4">Loading...</p>}

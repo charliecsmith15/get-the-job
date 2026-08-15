@@ -63,5 +63,5 @@ app.get('/{*path}', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`CareerNexus server listening on port ${PORT}`);
+    console.log(`Get the Job server listening on port ${PORT}`);
 });

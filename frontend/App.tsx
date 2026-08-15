@@ -50,13 +50,13 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [authState, setAuthState] = useState<AuthState>('checking');
 
     useEffect(() => {
-        const saved = sessionStorage.getItem('careernexus_auth');
+        const saved = sessionStorage.getItem('getthejob_auth');
         setAuthState(saved && ALLOWED_EMAILS.includes(saved) ? 'authorized' : 'unauthenticated');
     }, []);
 
     const handleSignIn = useCallback((email: string) => {
         if (ALLOWED_EMAILS.includes(email)) {
-            sessionStorage.setItem('careernexus_auth', email);
+            sessionStorage.setItem('getthejob_auth', email);
             setAuthState('authorized');
         } else {
             setAuthState('denied');

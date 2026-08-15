@@ -25,7 +25,7 @@ export const DeveloperAPI: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `careernexus_export_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `getthejob_export_${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -68,7 +68,7 @@ export const DeveloperAPI: React.FC = () => {
                         <Database className="w-5 h-5 mr-2 text-wood-dark" /> SQL Backend Connection
                     </h2>
                     <p className="text-sm text-ink mb-6">
-                        Connect CareerNexus to your own REST API that writes to an actual SQL server (PostgreSQL, MySQL, etc.). When enabled, all changes will be synced to your database.
+                        Connect Get the Job to your own REST API that writes to an actual SQL server (PostgreSQL, MySQL, etc.). When enabled, all changes will be synced to your database.
                     </p>
                     
                     <div className="space-y-4 max-w-xl">
@@ -249,7 +249,7 @@ DELETE /api/interview-questions/:id  → delete question`}
                     <div className="bg-forest-soft p-4 rounded-lg border border-forest overflow-x-auto">
                         <code className="text-sm text-sage font-mono whitespace-pre">
 {`// Access the API via the global window object
-const api = window.CareerNexusAPI;
+const api = window.GetTheJobAPI;
 
 // Get full state
 const state = api.getState();
@@ -275,7 +275,7 @@ api.addContextResource({
                         </code>
                     </div>
                     <p className="text-sm mt-4 text-sage-soft">
-                        To build an MCP server for Claude, you can write a local Node.js script that uses Puppeteer to connect to this running tab and executes the <code className="bg-forest px-1 rounded text-paper">window.CareerNexusAPI</code> methods. Alternatively, you can have your MCP server read and write the JSON export file directly.
+                        To build an MCP server for Claude, you can write a local Node.js script that uses Puppeteer to connect to this running tab and executes the <code className="bg-forest px-1 rounded text-paper">window.GetTheJobAPI</code> methods. Alternatively, you can have your MCP server read and write the JSON export file directly.
                     </p>
                 </Card>
             </div>

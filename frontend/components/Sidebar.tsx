@@ -22,7 +22,7 @@ export const Sidebar: React.FC = () => {
                 <div className="bg-wood p-2 rounded-lg">
                     <Briefcase className="w-6 h-6" />
                 </div>
-                <span className="text-xl font-bold tracking-tight">CareerNexus</span>
+                <span className="text-xl font-bold tracking-tight">Get the Job</span>
             </div>
 
             <nav className="flex-1 px-4 space-y-1 mt-4">

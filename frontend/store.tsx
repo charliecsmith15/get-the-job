@@ -99,12 +99,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     
     const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
     const [dbConfig, setDbConfig] = useState<DbConfig>(() => {
-        const builtInUrl = process.env.BACKEND_URL;
-        if (builtInUrl) return { enabled: true, url: builtInUrl };
         const saved = localStorage.getItem('getthejob_db_config');
         if (saved) return JSON.parse(saved);
         return { enabled: false, url: 'http://localhost:3000/api' };
     });
+
+    // Fetch backend URL from server config on mount — works on any device
+    useEffect(() => {
+        fetch('/config')
+            .then(r => r.json())
+            .then(({ backendUrl }) => {
+                if (backendUrl) {
+                    setDbConfig({ enabled: true, url: backendUrl });
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     const apiClient = useMemo(() => createApiClient(dbConfig.url), [dbConfig.url]);
 

@@ -15,7 +15,8 @@
     "express": "^5.2.1",
     "google-auth-library": "^10.5.0",
     "express-rate-limit": "^7.5.0",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "pg": "^8.13.3"
   },
   "devDependencies": {
     "@types/node": "^25.2.0",

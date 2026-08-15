@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppStore } from '../store';
 import { JobStatus, Job } from '../types';
 import { Card, Button, Badge, Input } from '../components/UI';
-import { Plus, ExternalLink, Search, MapPin, Calendar, ChevronRight } from 'lucide-react';
+import { Plus, ExternalLink, Search, MapPin, Calendar, ChevronRight, X } from 'lucide-react';
 
 const COLUMNS: JobStatus[] = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
 
@@ -80,84 +80,83 @@ export const JobBoard: React.FC = () => {
                 </div>
             </div>
 
+            {/* ── Mobile: bottom sheet ── */}
             {isAdding && (
-                <Card className="mb-4 p-4 border-wood bg-cream crm-enter">
-                    <h3 className="font-semibold text-ink mb-4">Add Job</h3>
-                    <form onSubmit={handleAddJob} className="space-y-4">
-                        {/* Required fields */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input
-                                label="Company *"
-                                required
-                                placeholder="e.g. Acme Corp"
-                                value={newJob.company}
-                                onChange={e => setNewJob({ ...newJob, company: e.target.value })}
-                            />
-                            <Input
-                                label="Job URL *"
-                                required
-                                type="url"
-                                placeholder="https://..."
-                                value={newJob.url}
-                                onChange={e => setNewJob({ ...newJob, url: e.target.value })}
-                            />
+                <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
+                    <div className="absolute inset-0 bg-black/40" onClick={() => { setIsAdding(false); setNewJob(BLANK_JOB); setTagsInput(''); }} />
+                    <div className="relative bg-paper rounded-t-2xl flex flex-col max-h-[92vh]">
+                        <div className="flex-shrink-0 flex justify-center pt-3 pb-1">
+                            <div className="w-10 h-1 rounded-full bg-sand" />
                         </div>
-
-                        {/* Optional fields */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input
-                                label="Job Title"
-                                placeholder="e.g. Senior Product Manager"
-                                value={newJob.title}
-                                onChange={e => setNewJob({ ...newJob, title: e.target.value })}
-                            />
-                            <Input
-                                label="Location"
-                                placeholder="e.g. New York, NY or Remote"
-                                value={newJob.location}
-                                onChange={e => setNewJob({ ...newJob, location: e.target.value })}
-                            />
+                        <div className="flex-shrink-0 flex justify-between items-center px-5 py-3 border-b border-sand">
+                            <h3 className="font-semibold text-ink">Add Job</h3>
+                            <button onClick={() => { setIsAdding(false); setNewJob(BLANK_JOB); setTagsInput(''); }} className="p-1 text-taupe">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <form id="mobile-add-job" onSubmit={handleAddJob} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                            <Input label="Company *" required placeholder="e.g. Acme Corp" value={newJob.company} onChange={e => setNewJob({ ...newJob, company: e.target.value })} />
+                            <Input label="Job URL *" required type="url" placeholder="https://..." value={newJob.url} onChange={e => setNewJob({ ...newJob, url: e.target.value })} />
+                            <Input label="Job Title" placeholder="e.g. Senior Product Manager" value={newJob.title} onChange={e => setNewJob({ ...newJob, title: e.target.value })} />
+                            <Input label="Location" placeholder="e.g. New York, NY or Remote" value={newJob.location} onChange={e => setNewJob({ ...newJob, location: e.target.value })} />
                             <div>
                                 <label className="block text-sm font-medium text-ink mb-1">Status</label>
-                                <select
-                                    className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
-                                    value={newJob.status}
-                                    onChange={e => setNewJob({ ...newJob, status: e.target.value as JobStatus })}
-                                >
+                                <select className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm" value={newJob.status} onChange={e => setNewJob({ ...newJob, status: e.target.value as JobStatus })}>
                                     {COLUMNS.map(col => <option key={col} value={col}>{col}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-ink mb-1">Date Applied</label>
-                                <input
-                                    type="date"
-                                    className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
-                                    value={newJob.dateApplied ?? ''}
-                                    onChange={e => setNewJob({ ...newJob, dateApplied: e.target.value })}
-                                />
+                                <input type="date" className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm" value={newJob.dateApplied ?? ''} onChange={e => setNewJob({ ...newJob, dateApplied: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-ink mb-1">Tags</label>
+                                <input type="text" placeholder="e.g. remote, fintech (comma-separated)" className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm" value={tagsInput} onChange={e => setTagsInput(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-ink mb-1">Description / Notes</label>
+                                <textarea rows={3} placeholder="Paste the job description or any notes..." className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm resize-none" value={newJob.description} onChange={e => setNewJob({ ...newJob, description: e.target.value })} />
+                            </div>
+                        </form>
+                        <div className="flex-shrink-0 px-5 py-4 border-t border-sand bg-paper flex gap-3" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+                            <button type="button" onClick={() => { setIsAdding(false); setNewJob(BLANK_JOB); setTagsInput(''); }} className="flex-1 py-2.5 rounded-lg border border-sand text-ink text-sm font-medium">Cancel</button>
+                            <button type="submit" form="mobile-add-job" className="flex-1 py-2.5 rounded-lg bg-forest text-paper text-sm font-medium">Save Job</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Desktop: inline card ── */}
+            {isAdding && (
+                <Card className="hidden md:block mb-4 p-4 border-wood bg-cream crm-enter">
+                    <h3 className="font-semibold text-ink mb-4">Add Job</h3>
+                    <form onSubmit={handleAddJob} className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input label="Company *" required placeholder="e.g. Acme Corp" value={newJob.company} onChange={e => setNewJob({ ...newJob, company: e.target.value })} />
+                            <Input label="Job URL *" required type="url" placeholder="https://..." value={newJob.url} onChange={e => setNewJob({ ...newJob, url: e.target.value })} />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input label="Job Title" placeholder="e.g. Senior Product Manager" value={newJob.title} onChange={e => setNewJob({ ...newJob, title: e.target.value })} />
+                            <Input label="Location" placeholder="e.g. New York, NY or Remote" value={newJob.location} onChange={e => setNewJob({ ...newJob, location: e.target.value })} />
+                            <div>
+                                <label className="block text-sm font-medium text-ink mb-1">Status</label>
+                                <select className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm" value={newJob.status} onChange={e => setNewJob({ ...newJob, status: e.target.value as JobStatus })}>
+                                    {COLUMNS.map(col => <option key={col} value={col}>{col}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-ink mb-1">Date Applied</label>
+                                <input type="date" className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm" value={newJob.dateApplied ?? ''} onChange={e => setNewJob({ ...newJob, dateApplied: e.target.value })} />
                             </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-ink mb-1">Tags</label>
-                            <input
-                                type="text"
-                                placeholder="e.g. remote, fintech, series-b (comma-separated)"
-                                className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
-                                value={tagsInput}
-                                onChange={e => setTagsInput(e.target.value)}
-                            />
+                            <input type="text" placeholder="e.g. remote, fintech, series-b (comma-separated)" className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm" value={tagsInput} onChange={e => setTagsInput(e.target.value)} />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-ink mb-1">Description / Notes</label>
-                            <textarea
-                                rows={4}
-                                placeholder="Paste the job description or any notes..."
-                                className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm resize-none"
-                                value={newJob.description}
-                                onChange={e => setNewJob({ ...newJob, description: e.target.value })}
-                            />
+                            <textarea rows={4} placeholder="Paste the job description or any notes..." className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm resize-none" value={newJob.description} onChange={e => setNewJob({ ...newJob, description: e.target.value })} />
                         </div>
-
                         <div className="flex justify-end space-x-2">
                             <Button variant="ghost" type="button" onClick={() => { setIsAdding(false); setNewJob(BLANK_JOB); setTagsInput(''); }}>Cancel</Button>
                             <Button type="submit">Save Job</Button>

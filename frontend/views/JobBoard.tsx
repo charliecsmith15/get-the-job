@@ -26,8 +26,8 @@ export const JobBoard: React.FC = () => {
     };
 
     const filteredJobs = jobs.filter(job =>
-        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.company.toLowerCase().includes(searchTerm.toLowerCase())
+        (job.title ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (job.company ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const getStatusColor = (status: JobStatus) => {

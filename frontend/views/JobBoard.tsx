@@ -6,19 +6,23 @@ import { Plus, ExternalLink, Search, MapPin, Calendar, ChevronRight } from 'luci
 
 const COLUMNS: JobStatus[] = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
 
+const BLANK_JOB: Partial<Job> = { title: '', company: '', status: 'Saved', url: '', description: '', location: '', dateApplied: '' };
+
 export const JobBoard: React.FC = () => {
     const { jobs, addJob, updateJob, navigate } = useAppStore();
     const [isAdding, setIsAdding] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [newJob, setNewJob] = useState<Partial<Job>>({ title: '', company: '', status: 'Saved', url: '', description: '' });
+    const [newJob, setNewJob] = useState<Partial<Job>>(BLANK_JOB);
+    const [tagsInput, setTagsInput] = useState('');
 
     const handleAddJob = (e: React.FormEvent) => {
         e.preventDefault();
-        if (newJob.title && newJob.company) {
-            addJob(newJob as Omit<Job, 'id' | 'dateAdded'>);
-            setIsAdding(false);
-            setNewJob({ title: '', company: '', status: 'Saved', url: '', description: '' });
-        }
+        if (!newJob.company || !newJob.url) return;
+        const tags = tagsInput.trim() ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : [];
+        addJob({ ...newJob, tags } as Omit<Job, 'id' | 'dateAdded'>);
+        setIsAdding(false);
+        setNewJob(BLANK_JOB);
+        setTagsInput('');
     };
 
     const filteredJobs = jobs.filter(job =>
@@ -78,13 +82,43 @@ export const JobBoard: React.FC = () => {
 
             {isAdding && (
                 <Card className="mb-4 p-4 border-wood bg-cream crm-enter">
+                    <h3 className="font-semibold text-ink mb-4">Add Job</h3>
                     <form onSubmit={handleAddJob} className="space-y-4">
+                        {/* Required fields */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input label="Job Title *" required value={newJob.title} onChange={e => setNewJob({ ...newJob, title: e.target.value })} />
-                            <Input label="Company *" required value={newJob.company} onChange={e => setNewJob({ ...newJob, company: e.target.value })} />
-                            <Input label="URL" type="url" value={newJob.url} onChange={e => setNewJob({ ...newJob, url: e.target.value })} />
+                            <Input
+                                label="Company *"
+                                required
+                                placeholder="e.g. Acme Corp"
+                                value={newJob.company}
+                                onChange={e => setNewJob({ ...newJob, company: e.target.value })}
+                            />
+                            <Input
+                                label="Job URL *"
+                                required
+                                type="url"
+                                placeholder="https://..."
+                                value={newJob.url}
+                                onChange={e => setNewJob({ ...newJob, url: e.target.value })}
+                            />
+                        </div>
+
+                        {/* Optional fields */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                                label="Job Title"
+                                placeholder="e.g. Senior Product Manager"
+                                value={newJob.title}
+                                onChange={e => setNewJob({ ...newJob, title: e.target.value })}
+                            />
+                            <Input
+                                label="Location"
+                                placeholder="e.g. New York, NY or Remote"
+                                value={newJob.location}
+                                onChange={e => setNewJob({ ...newJob, location: e.target.value })}
+                            />
                             <div>
-                                <label className="block text-sm font-medium text-ink mb-1">Initial Status</label>
+                                <label className="block text-sm font-medium text-ink mb-1">Status</label>
                                 <select
                                     className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
                                     value={newJob.status}
@@ -93,9 +127,39 @@ export const JobBoard: React.FC = () => {
                                     {COLUMNS.map(col => <option key={col} value={col}>{col}</option>)}
                                 </select>
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-ink mb-1">Date Applied</label>
+                                <input
+                                    type="date"
+                                    className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
+                                    value={newJob.dateApplied ?? ''}
+                                    onChange={e => setNewJob({ ...newJob, dateApplied: e.target.value })}
+                                />
+                            </div>
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-ink mb-1">Tags</label>
+                            <input
+                                type="text"
+                                placeholder="e.g. remote, fintech, series-b (comma-separated)"
+                                className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
+                                value={tagsInput}
+                                onChange={e => setTagsInput(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-ink mb-1">Description / Notes</label>
+                            <textarea
+                                rows={4}
+                                placeholder="Paste the job description or any notes..."
+                                className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm resize-none"
+                                value={newJob.description}
+                                onChange={e => setNewJob({ ...newJob, description: e.target.value })}
+                            />
+                        </div>
+
                         <div className="flex justify-end space-x-2">
-                            <Button variant="ghost" type="button" onClick={() => setIsAdding(false)}>Cancel</Button>
+                            <Button variant="ghost" type="button" onClick={() => { setIsAdding(false); setNewJob(BLANK_JOB); setTagsInput(''); }}>Cancel</Button>
                             <Button type="submit">Save Job</Button>
                         </div>
                     </form>

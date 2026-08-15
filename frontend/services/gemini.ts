@@ -177,10 +177,18 @@ export const chatWithCompanion = async (
     ${interviewQAs || 'No interview questions added yet.'}
 
     --- CURRENT JOBS ---
-    ${appState.jobs.map((j: any) => `- ${j.title} at ${j.company} (Status: ${j.status})`).join('\n')}
+    ${appState.jobs.map((j: any) => [
+        `## ${j.title || 'Untitled'} at ${j.company} (Status: ${j.status})`,
+        j.location ? `Location: ${j.location}` : '',
+        j.dateApplied ? `Applied: ${j.dateApplied}` : '',
+        j.tags?.length ? `Tags: ${j.tags.join(', ')}` : '',
+        j.description ? `Description:\n${j.description}` : '',
+        j.matchScore ? `Match Score: ${j.matchScore}%` : '',
+        j.matchAnalysis ? `Match Analysis: ${j.matchAnalysis}` : '',
+    ].filter(Boolean).join('\n')).join('\n\n')}
 
     --- RESUMES ---
-    ${appState.resumes.map((r: any) => `- ${r.name} (Target: ${r.targetRole})`).join('\n')}
+    ${appState.resumes.map((r: any) => `## ${r.name} (Target Role: ${r.targetRole})\n${r.content}`).join('\n\n')}
     `;
 
     const contents = history.map(msg => ({

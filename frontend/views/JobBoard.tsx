@@ -37,32 +37,6 @@ export const JobBoard: React.FC = () => {
         }
     };
 
-    const AddJobForm = () => (
-        <Card className="mb-4 p-4 border-wood bg-cream crm-enter">
-            <form onSubmit={handleAddJob} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label="Job Title *" required value={newJob.title} onChange={e => setNewJob({ ...newJob, title: e.target.value })} />
-                    <Input label="Company *" required value={newJob.company} onChange={e => setNewJob({ ...newJob, company: e.target.value })} />
-                    <Input label="URL" type="url" value={newJob.url} onChange={e => setNewJob({ ...newJob, url: e.target.value })} />
-                    <div>
-                        <label className="block text-sm font-medium text-ink mb-1">Initial Status</label>
-                        <select
-                            className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
-                            value={newJob.status}
-                            onChange={e => setNewJob({ ...newJob, status: e.target.value as JobStatus })}
-                        >
-                            {COLUMNS.map(col => <option key={col} value={col}>{col}</option>)}
-                        </select>
-                    </div>
-                </div>
-                <div className="flex justify-end space-x-2">
-                    <Button variant="ghost" type="button" onClick={() => setIsAdding(false)}>Cancel</Button>
-                    <Button type="submit">Save Job</Button>
-                </div>
-            </form>
-        </Card>
-    );
-
     return (
         <div className="h-full flex flex-col crm-enter">
 
@@ -102,7 +76,31 @@ export const JobBoard: React.FC = () => {
                 </div>
             </div>
 
-            {isAdding && <AddJobForm />}
+            {isAdding && (
+                <Card className="mb-4 p-4 border-wood bg-cream crm-enter">
+                    <form onSubmit={handleAddJob} className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input label="Job Title *" required value={newJob.title} onChange={e => setNewJob({ ...newJob, title: e.target.value })} />
+                            <Input label="Company *" required value={newJob.company} onChange={e => setNewJob({ ...newJob, company: e.target.value })} />
+                            <Input label="URL" type="url" value={newJob.url} onChange={e => setNewJob({ ...newJob, url: e.target.value })} />
+                            <div>
+                                <label className="block text-sm font-medium text-ink mb-1">Initial Status</label>
+                                <select
+                                    className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
+                                    value={newJob.status}
+                                    onChange={e => setNewJob({ ...newJob, status: e.target.value as JobStatus })}
+                                >
+                                    {COLUMNS.map(col => <option key={col} value={col}>{col}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                            <Button variant="ghost" type="button" onClick={() => setIsAdding(false)}>Cancel</Button>
+                            <Button type="submit">Save Job</Button>
+                        </div>
+                    </form>
+                </Card>
+            )}
 
             {/* ── Mobile: flat list view ── */}
             <div className="md:hidden flex-1 overflow-y-auto space-y-3">

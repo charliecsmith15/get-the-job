@@ -57,7 +57,9 @@ app.use(async (req, res, next) => {
 
 // Config endpoint — returns server-side env vars the client needs
 app.get('/config', (req, res) => {
-    res.json({ backendUrl: process.env.BACKEND_URL || '' });
+    let backendUrl = (process.env.BACKEND_URL || '').replace(/\/$/, '');
+    if (backendUrl && !backendUrl.endsWith('/api')) backendUrl += '/api';
+    res.json({ backendUrl });
 });
 
 // Serve static files (index.html, etc.)

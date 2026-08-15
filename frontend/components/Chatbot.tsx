@@ -124,7 +124,7 @@ export const Chatbot: React.FC = () => {
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Ask about your job search..."
-                                className="flex-1 px-4 py-2 border border-slate-300 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"
+                                className="flex-1 px-4 py-2 border border-slate-300 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500 text-base md:text-sm"
                                 disabled={isLoading}
                             />
                             <button 

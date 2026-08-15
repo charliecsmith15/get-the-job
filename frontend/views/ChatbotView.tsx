@@ -163,7 +163,7 @@ export const ChatbotView: React.FC = () => {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Ask for interview tips, resume advice, or job match analysis..."
-                            className="flex-1 px-5 py-3 border border-sand rounded-full bg-paper text-ink crm-focus text-sm shadow-sm"
+                            className="flex-1 px-5 py-3 border border-sand rounded-full bg-paper text-ink crm-focus text-base md:text-sm shadow-sm"
                             disabled={isLoading}
                         />
                         <button 

@@ -103,7 +103,7 @@ export const JournalView: React.FC = () => {
                                 type="date"
                                 value={draftDate}
                                 onChange={e => setDraftDate(e.target.value)}
-                                className="px-3 py-1.5 border border-sand rounded-lg bg-paper text-ink text-sm crm-focus"
+                                className="px-3 py-1.5 border border-sand rounded-lg bg-paper text-ink text-base md:text-sm crm-focus"
                             />
                             <button
                                 onClick={isRecording ? stopRecording : startRecording}

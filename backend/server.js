@@ -14,7 +14,13 @@ import rateLimit from 'express-rate-limit';
 import { WebSocketServer, WebSocket } from 'ws';
 
 const app = express();
-app.use(cors({ origin: ['https://careernexus-948539209903.us-central1.run.app', 'https://jobsearch.workbench-data.com'] }));
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true); // allow server-to-server / curl
+        const allowed = origin.endsWith('.run.app') || origin === 'https://jobsearch.workbench-data.com' || origin === 'http://localhost:8080' || origin === 'http://localhost:3000';
+        callback(allowed ? null : new Error('CORS'), allowed);
+    }
+}));
 app.use(express.json({limit: process?.env?.API_PAYLOAD_MAX_SIZE || "7mb"}));
 
 const PORT = process?.env?.PORT || process?.env?.API_BACKEND_PORT || 8080;

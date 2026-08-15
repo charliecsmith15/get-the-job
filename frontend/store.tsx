@@ -100,7 +100,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
     const [dbConfig, setDbConfig] = useState<DbConfig>(() => {
         const saved = localStorage.getItem('getthejob_db_config');
-        return saved ? JSON.parse(saved) : { enabled: false, url: 'http://localhost:3000/api' };
+        if (saved) return JSON.parse(saved);
+        const builtInUrl = process.env.BACKEND_URL;
+        if (builtInUrl) return { enabled: true, url: builtInUrl };
+        return { enabled: false, url: 'http://localhost:3000/api' };
     });
 
     const apiClient = useMemo(() => createApiClient(dbConfig.url), [dbConfig.url]);

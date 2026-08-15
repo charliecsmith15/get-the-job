@@ -19,7 +19,7 @@ steps:
           --platform managed \
           --allow-unauthenticated \
           --port 8080 \
-          --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION},GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID},GOOGLE_API_KEY=${_GOOGLE_API_KEY}"
+          --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION},GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID},GOOGLE_API_KEY=${_GOOGLE_API_KEY},BACKEND_URL=${_BACKEND_URL}"
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus'
@@ -28,6 +28,7 @@ substitutions:
   _GOOGLE_CLOUD_LOCATION: us-central1
   _GOOGLE_CLIENT_ID: ''
   _GOOGLE_API_KEY: ''
+  _BACKEND_URL: ''
 
 options:
   logging: CLOUD_LOGGING_ONLY

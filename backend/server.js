@@ -370,8 +370,8 @@ app.post('/api/jobs', requireDb, async (req, res) => {
   await pool.query(
     `INSERT INTO jobs (id, title, company, status, url, description, "dateAdded", "matchScore", "matchAnalysis", location, tags, "dateApplied", "customFields")
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT (id) DO NOTHING`,
-    [j.id, j.title, j.company, j.status, j.url, j.description, j.dateAdded, j.matchScore, j.matchAnalysis, j.location,
-     JSON.stringify(j.tags ?? []), j.dateApplied, JSON.stringify(j.customFields ?? {})]
+    [j.id, j.title, j.company, j.status, j.url, j.description, j.dateAdded, j.matchScore || null, j.matchAnalysis, j.location,
+     JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {})]
   );
   res.status(201).json(j);
 });
@@ -380,8 +380,8 @@ app.put('/api/jobs/:id', requireDb, async (req, res) => {
   await pool.query(
     `UPDATE jobs SET title=$2, company=$3, status=$4, url=$5, description=$6, "matchScore"=$7, "matchAnalysis"=$8,
      location=$9, tags=$10, "dateApplied"=$11, "customFields"=$12 WHERE id=$1`,
-    [req.params.id, j.title, j.company, j.status, j.url, j.description, j.matchScore, j.matchAnalysis,
-     j.location, JSON.stringify(j.tags ?? []), j.dateApplied, JSON.stringify(j.customFields ?? {})]
+    [req.params.id, j.title, j.company, j.status, j.url, j.description, j.matchScore || null, j.matchAnalysis,
+     j.location, JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {})]
   );
   res.status(204).end();
 });

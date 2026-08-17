@@ -15,7 +15,10 @@ const buildFoundationalContext = (
     return `
 === FOUNDATIONAL CAREER CONTEXT — treat as primary reference for all responses ===
 
-IDEAL JOB PROFILE (Petals Exercise / What Color Is Your Parachute):
+CONTEXT RESOURCES (read first — defines the job search approach and explains the frameworks below):
+${contextResources.length ? contextResources.map(c => `[${c.title}]\n${c.content}`).join('\n\n') : 'None added yet.'}
+
+IDEAL JOB PROFILE (Petals Exercise):
 ${preferences.petalsExercise || 'Not provided.'}
 
 LINKEDIN PROFILE:
@@ -23,9 +26,6 @@ ${preferences.linkedInProfile || 'Not provided.'}
 
 PRIMARY RESUME:
 ${preferences.primaryResume || 'Not provided.'}
-
-CONTEXT RESOURCES (What Color Is Your Parachute notes, career criteria, etc.):
-${contextResources.length ? contextResources.map(c => `[${c.title}]\n${c.content}`).join('\n\n') : 'None added yet.'}
 ${recentJournal ? `\nRECENT JOURNAL (last 14 days):\n${recentJournal}` : ''}
 === END FOUNDATIONAL CONTEXT ===
 `;

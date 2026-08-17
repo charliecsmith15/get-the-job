@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { Send, Bot, Loader2, Save, X } from 'lucide-react';
 import { chatWithCompanion } from '../services/gemini';
-import { Card, Button, Input, Textarea } from '../components/UI';
+import { Card, Button, Input, Textarea, renderBold } from '../components/UI';
 import { Note } from '../types';
 
 interface ChatMessage {
@@ -124,7 +124,7 @@ export const ChatbotView: React.FC = () => {
                                 ? 'bg-wood text-paper rounded-br-none shadow-md' 
                                 : 'bg-paper border border-sand text-ink rounded-bl-none shadow-sm'
                             }`}>
-                                <div className="whitespace-pre-wrap leading-relaxed">{msg.text}</div>
+                                <div className="whitespace-pre-wrap leading-relaxed">{renderBold(msg.text)}</div>
                                 
                                 {/* Export Button for Model Messages */}
                                 {msg.role === 'model' && (

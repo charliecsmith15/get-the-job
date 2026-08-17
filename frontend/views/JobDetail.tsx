@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
-import { Card, Button, Badge, Textarea, Input } from '../components/UI';
+import { Card, Button, Badge, Textarea, Input, renderBold } from '../components/UI';
 import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X } from 'lucide-react';
 import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, generateTailoredResume } from '../services/gemini';
 import { Job } from '../types';
@@ -413,13 +413,13 @@ export const JobDetail: React.FC = () => {
                                         <div>
                                             <h4 className="font-medium text-sage flex items-center mb-2"><CheckCircle2 className="w-4 h-4 mr-1"/> Pros</h4>
                                             <ul className="space-y-2">
-                                                {analysis.pros.map((pro, i) => <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-sage">•</span>{pro}</li>)}
+                                                {analysis.pros.map((pro, i) => <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-sage">•</span>{renderBold(pro)}</li>)}
                                             </ul>
                                         </div>
                                         <div>
                                             <h4 className="font-medium text-danger flex items-center mb-2"><XCircle className="w-4 h-4 mr-1"/> Potential Concerns</h4>
                                             <ul className="space-y-2">
-                                                {analysis.cons.map((con, i) => <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-danger">•</span>{con}</li>)}
+                                                {analysis.cons.map((con, i) => <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-danger">•</span>{renderBold(con)}</li>)}
                                             </ul>
                                         </div>
                                     </div>
@@ -428,7 +428,7 @@ export const JobDetail: React.FC = () => {
                                             <h4 className="font-medium text-ink mb-2">Why am I a good fit for this role?</h4>
                                             <ul className="bg-cream p-4 rounded-lg space-y-2">
                                                 {analysis.fitReason.map((point, i) => (
-                                                    <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-sage flex-shrink-0">•</span>{point}</li>
+                                                    <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-sage flex-shrink-0">•</span>{renderBold(point)}</li>
                                                 ))}
                                             </ul>
                                         </div>
@@ -437,7 +437,7 @@ export const JobDetail: React.FC = () => {
                                             <ol className="bg-cream p-4 rounded-lg space-y-3">
                                                 {analysis.resumeEdits.map((edit, i) => (
                                                     <li key={i} className="text-sm text-ink flex items-start">
-                                                        <span className="mr-2 font-medium text-wood flex-shrink-0">{i + 1}.</span>{edit}
+                                                        <span className="mr-2 font-medium text-wood flex-shrink-0">{i + 1}.</span>{renderBold(edit)}
                                                     </li>
                                                 ))}
                                             </ol>
@@ -460,7 +460,7 @@ export const JobDetail: React.FC = () => {
                                 </div>
                                 {aiQuestions ? (
                                     <div className="prose prose-sm max-w-none text-ink whitespace-pre-wrap">
-                                        {aiQuestions}
+                                        {renderBold(aiQuestions)}
                                     </div>
                                 ) : (
                                     <p className="text-taupe text-sm">Generate potential interview questions based on the job description.</p>
@@ -493,7 +493,7 @@ export const JobDetail: React.FC = () => {
                                     
                                     {aiTailorAdvice && (
                                         <div className="mt-4 p-4 bg-cream rounded-lg border border-sand prose prose-sm max-w-none text-ink whitespace-pre-wrap max-h-64 overflow-y-auto crm-scrollbar">
-                                            {aiTailorAdvice}
+                                            {renderBold(aiTailorAdvice)}
                                         </div>
                                     )}
 

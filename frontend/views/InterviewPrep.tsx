@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store';
-import { Card, Button, Input, Textarea } from '../components/UI';
+import { Card, Button, Input, Textarea, renderBold } from '../components/UI';
 import { MessageCircle, Plus, Trash2, Save, X, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const CATEGORIES = ['General', 'Behavioural', 'Technical', 'Leadership', 'Culture Fit', 'Situational'];
@@ -188,7 +188,7 @@ export const InterviewPrepView: React.FC = () => {
                                             </button>
                                             {expandedId === q.id && (
                                                 <div className="px-5 pb-5 border-t border-sand pt-4 crm-enter">
-                                                    <p className="text-sm text-ink whitespace-pre-wrap leading-relaxed">{q.response}</p>
+                                                    <p className="text-sm text-ink whitespace-pre-wrap leading-relaxed">{renderBold(q.response)}</p>
                                                 </div>
                                             )}
                                         </div>

@@ -1,6 +1,12 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
+// Renders **bold** markdown as <strong> inline. Preserves line breaks via whitespace-pre-wrap on the parent.
+export const renderBold = (text: string): React.ReactNode => {
+    const parts = text.split(/\*\*(.*?)\*\*/gs);
+    return parts.map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part);
+};
+
 export const Card: React.FC<React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode; className?: string }> = ({ children, className = '', ...props }) => (
     <div className={`crm-card rounded-xl overflow-hidden ${className}`} {...props}>
         {children}

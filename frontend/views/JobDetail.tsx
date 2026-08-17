@@ -155,49 +155,58 @@ export const JobDetail: React.FC = () => {
     return (
         <div className="max-w-5xl mx-auto crm-enter pb-12">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-4">
+            <div className="mb-6">
+                {/* Top row: back button + actions */}
+                <div className="flex items-center justify-between mb-3">
                     <button onClick={() => navigate('jobs')} className="p-2 hover:bg-sand rounded-full transition-colors text-taupe">
                         <ArrowLeft className="w-5 h-5" />
                     </button>
-                    <div>
-                        <h1 className="text-2xl font-bold text-ink flex items-center gap-3">
-                            {job.title}
-                            {job.matchScore && (
-                                <Badge color={job.matchScore > 80 ? 'green' : job.matchScore > 50 ? 'yellow' : 'red'}>
-                                    {job.matchScore}% Match
-                                </Badge>
-                            )}
-                        </h1>
-                        <p className="text-lg text-taupe">{job.company}</p>
+                    <div className="flex items-center space-x-2">
+                        <select
+                            className="px-2 py-1.5 border border-sand rounded-lg text-sm font-medium bg-paper text-ink crm-focus"
+                            value={job.status}
+                            onChange={(e) => updateJob(job.id, { status: e.target.value as any })}
+                        >
+                            {['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'].map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <button
+                            onClick={() => { if(confirm('Delete this job?')) deleteJob(job.id); }}
+                            className="p-2 rounded-lg text-danger hover:bg-danger/10 transition-colors"
+                            title="Delete job"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                    <select 
-                        className="px-3 py-2 border border-sand rounded-lg text-sm font-medium bg-paper text-ink crm-focus"
-                        value={job.status}
-                        onChange={(e) => updateJob(job.id, { status: e.target.value as any })}
-                    >
-                        {['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'].map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    <Button variant="danger" icon={Trash2} onClick={() => { if(confirm('Delete this job?')) deleteJob(job.id); }}>Delete</Button>
+                {/* Title block */}
+                <div className="pl-1">
+                    <h1 className="text-xl sm:text-2xl font-bold text-ink flex flex-wrap items-center gap-2">
+                        {job.title}
+                        {job.matchScore && (
+                            <Badge color={job.matchScore > 80 ? 'green' : job.matchScore > 50 ? 'yellow' : 'red'}>
+                                {job.matchScore}% Match
+                            </Badge>
+                        )}
+                    </h1>
+                    <p className="text-base sm:text-lg text-taupe">{job.company}</p>
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex space-x-1 border-b border-sand mb-6">
+            <div className="flex border-b border-sand mb-6">
                 {[
-                    { id: 'details', label: 'Details', icon: FileText },
-                    { id: 'notes', label: 'Notes & Events', icon: MessageSquare },
-                    { id: 'ai', label: 'AI Assistant', icon: Sparkles }
+                    { id: 'details', label: 'Details', shortLabel: 'Details', icon: FileText },
+                    { id: 'notes', label: 'Notes & Events', shortLabel: 'Notes', icon: MessageSquare },
+                    { id: 'ai', label: 'AI Assistant', shortLabel: 'AI', icon: Sparkles }
                 ].map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-wood text-wood' : 'border-transparent text-taupe hover:text-ink hover:border-sand'}`}
+                        className={`flex items-center px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-wood text-wood' : 'border-transparent text-taupe hover:text-ink hover:border-sand'}`}
                     >
-                        <tab.icon className="w-4 h-4 mr-2" />
-                        {tab.label}
+                        <tab.icon className="w-4 h-4 sm:mr-2 flex-shrink-0" />
+                        <span className="hidden sm:inline">{tab.label}</span>
+                        <span className="sm:hidden ml-1">{tab.shortLabel}</span>
                     </button>
                 ))}
             </div>

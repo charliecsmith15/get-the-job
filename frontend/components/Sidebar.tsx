@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../store';
-import { LayoutDashboard, KanbanSquare, FileText, Settings, Briefcase, Code2, Database, MessageSquare, BookOpen, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, KanbanSquare, FileText, Settings, Briefcase, Code2, Database, MessageSquare, BookOpen, MessageCircle, Globe } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
     const { currentView, navigate, dbConfig, syncStatus } = useAppStore();
@@ -12,6 +12,7 @@ export const Sidebar: React.FC = () => {
         { id: 'resumes', label: 'Resumes', icon: FileText },
         { id: 'journal', label: 'Search Journal', icon: BookOpen },
         { id: 'interview-prep', label: 'Interview Prep', icon: MessageCircle },
+        { id: 'sources', label: 'Sources', icon: Globe },
         { id: 'preferences', label: 'Preferences & Context', icon: Settings },
         { id: 'developer', label: 'Developer API & DB', icon: Code2 },
     ];

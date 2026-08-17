@@ -11,6 +11,7 @@ import { DeveloperAPI } from './views/DeveloperAPI';
 import { ChatbotView } from './views/ChatbotView';
 import { JournalView } from './views/Journal';
 import { InterviewPrepView } from './views/InterviewPrep';
+import { SourcesView } from './views/Sources';
 import { MobileNav } from './components/MobileNav';
 
 const ALLOWED_EMAILS = (process.env.ALLOWED_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
@@ -29,6 +30,7 @@ const MainContent: React.FC = () => {
             case 'developer': return <DeveloperAPI />;
             case 'journal': return <JournalView />;
             case 'interview-prep': return <InterviewPrepView />;
+            case 'sources': return <SourcesView />;
             default: return <Dashboard />;
         }
     };

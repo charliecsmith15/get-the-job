@@ -70,7 +70,14 @@ export interface InterviewQuestion {
     dateAdded: string;
 }
 
-export type ViewState = 'dashboard' | 'chatbot' | 'jobs' | 'job-detail' | 'resumes' | 'preferences' | 'developer' | 'journal' | 'interview-prep';
+export type ViewState = 'dashboard' | 'chatbot' | 'jobs' | 'job-detail' | 'resumes' | 'preferences' | 'developer' | 'journal' | 'interview-prep' | 'sources';
+
+export interface JobSource {
+    id: string;
+    label: string;
+    url: string;
+    dateAdded: string;
+}
 
 export interface DbConfig {
     enabled: boolean;

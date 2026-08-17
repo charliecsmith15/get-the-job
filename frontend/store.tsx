@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useMemo } from 'react';
-import { Job, JobAnalysis, Note, Resume, Preferences, ContextResource, ViewState, DbConfig, SyncStatus, JournalEntry, InterviewQuestion } from './types';
+import { Job, JobAnalysis, Note, Resume, Preferences, ContextResource, ViewState, DbConfig, SyncStatus, JournalEntry, InterviewQuestion, JobSource } from './types';
 import { createApiClient } from './services/api';
 
 interface AppState {
@@ -11,6 +11,7 @@ interface AppState {
     journalEntries: JournalEntry[];
     interviewQuestions: InterviewQuestion[];
     jobAnalyses: JobAnalysis[];
+    jobSources: JobSource[];
     currentView: ViewState;
     selectedJobId: string | null;
     dbConfig: DbConfig;
@@ -37,6 +38,9 @@ interface AppContextType extends AppState {
     deleteInterviewQuestion: (id: string) => void;
     setJobAnalysis: (jobId: string, data: Pick<JobAnalysis, 'score' | 'pros' | 'cons' | 'fitReason' | 'resumeEdits'>) => void;
     deleteJobAnalysis: (jobId: string) => void;
+    addJobSource: (source: Omit<JobSource, 'id' | 'dateAdded'>) => void;
+    updateJobSource: (id: string, updates: Partial<Pick<JobSource, 'label' | 'url'>>) => void;
+    deleteJobSource: (id: string) => void;
     navigate: (view: ViewState, jobId?: string) => void;
     importData: (data: any) => void;
     updateDbConfig: (config: DbConfig) => void;
@@ -98,6 +102,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
     const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>([]);
     const [jobAnalyses, setJobAnalyses] = useState<JobAnalysis[]>([]);
+    const [jobSources, setJobSources] = useState<JobSource[]>(() => {
+        const saved = localStorage.getItem('getthejob_sources');
+        return saved ? JSON.parse(saved) : [];
+    });
     const [currentView, setCurrentView] = useState<ViewState>('dashboard');
     const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
     
@@ -420,6 +428,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
+    const addJobSource = (sourceData: Omit<JobSource, 'id' | 'dateAdded'>) => {
+        setJobSources(prev => {
+            const updated = [{ ...sourceData, id: generateId(), dateAdded: new Date().toISOString() }, ...prev];
+            localStorage.setItem('getthejob_sources', JSON.stringify(updated));
+            return updated;
+        });
+    };
+
+    const updateJobSource = (id: string, updates: Partial<Pick<JobSource, 'label' | 'url'>>) => {
+        setJobSources(prev => {
+            const updated = prev.map(s => s.id === id ? { ...s, ...updates } : s);
+            localStorage.setItem('getthejob_sources', JSON.stringify(updated));
+            return updated;
+        });
+    };
+
+    const deleteJobSource = (id: string) => {
+        setJobSources(prev => {
+            const updated = prev.filter(s => s.id !== id);
+            localStorage.setItem('getthejob_sources', JSON.stringify(updated));
+            return updated;
+        });
+    };
+
     const navigate = (view: ViewState, jobId?: string) => {
         setCurrentView(view);
         if (jobId !== undefined) {
@@ -452,7 +484,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return (
         <AppContext.Provider value={{
-            jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses,
+            jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, jobSources,
             currentView, selectedJobId, dbConfig, syncStatus,
             addJob, updateJob, deleteJob, addNote, deleteNote,
             addResume, updateResume, deleteResume, updatePreferences: updatePreferencesState,
@@ -460,6 +492,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             addJournalEntry, updateJournalEntry, deleteJournalEntry,
             addInterviewQuestion, updateInterviewQuestion, deleteInterviewQuestion,
             setJobAnalysis, deleteJobAnalysis,
+            addJobSource, updateJobSource, deleteJobSource,
             navigate, importData, updateDbConfig
         }}>
             {children}

@@ -192,23 +192,25 @@ export const JobDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex border-b border-sand mb-6">
-                {[
-                    { id: 'details', label: 'Details', shortLabel: 'Details', icon: FileText },
-                    { id: 'notes', label: 'Notes & Events', shortLabel: 'Notes', icon: MessageSquare },
-                    { id: 'ai', label: 'AI Assistant', shortLabel: 'AI', icon: Sparkles }
-                ].map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex items-center px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-wood text-wood' : 'border-transparent text-taupe hover:text-ink hover:border-sand'}`}
-                    >
-                        <tab.icon className="w-4 h-4 sm:mr-2 flex-shrink-0" />
-                        <span className="hidden sm:inline">{tab.label}</span>
-                        <span className="sm:hidden ml-1">{tab.shortLabel}</span>
-                    </button>
-                ))}
+            {/* Tabs — sticky on mobile so they stay accessible while scrolling content */}
+            <div className="sticky top-0 z-10 bg-paper/95 backdrop-blur-sm -mx-4 px-4 sm:mx-0 sm:px-0 sm:static sm:bg-transparent sm:backdrop-blur-none">
+                <div className="flex border-b border-sand mb-6">
+                    {[
+                        { id: 'details', label: 'Details', shortLabel: 'Details', icon: FileText },
+                        { id: 'notes', label: 'Notes & Events', shortLabel: 'Notes', icon: MessageSquare },
+                        { id: 'ai', label: 'AI Assistant', shortLabel: 'AI', icon: Sparkles }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`flex items-center px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-wood text-wood' : 'border-transparent text-taupe hover:text-ink hover:border-sand'}`}
+                        >
+                            <tab.icon className="w-4 h-4 sm:mr-2 flex-shrink-0" />
+                            <span className="hidden sm:inline">{tab.label}</span>
+                            <span className="sm:hidden ml-1">{tab.shortLabel}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Tab Content */}

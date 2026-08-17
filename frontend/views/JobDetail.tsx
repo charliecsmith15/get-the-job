@@ -426,11 +426,21 @@ export const JobDetail: React.FC = () => {
                                     <div className="space-y-4 pt-4 border-t border-sand">
                                         <div>
                                             <h4 className="font-medium text-ink mb-2">Why am I a good fit for this role?</h4>
-                                            <p className="text-sm text-ink whitespace-pre-wrap bg-cream p-4 rounded-lg">{analysis.fitReason}</p>
+                                            <ul className="bg-cream p-4 rounded-lg space-y-2">
+                                                {analysis.fitReason.map((point, i) => (
+                                                    <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-sage flex-shrink-0">•</span>{point}</li>
+                                                ))}
+                                            </ul>
                                         </div>
                                         <div>
                                             <h4 className="font-medium text-ink mb-2">What edits to my resume should I make to stand out?</h4>
-                                            <p className="text-sm text-ink whitespace-pre-wrap bg-cream p-4 rounded-lg">{analysis.resumeEdits}</p>
+                                            <ol className="bg-cream p-4 rounded-lg space-y-3">
+                                                {analysis.resumeEdits.map((edit, i) => (
+                                                    <li key={i} className="text-sm text-ink flex items-start">
+                                                        <span className="mr-2 font-medium text-wood flex-shrink-0">{i + 1}.</span>{edit}
+                                                    </li>
+                                                ))}
+                                            </ol>
                                         </div>
                                     </div>
                                 </div>

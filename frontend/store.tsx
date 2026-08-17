@@ -18,7 +18,7 @@ interface AppState {
 }
 
 interface AppContextType extends AppState {
-    addJob: (job: Omit<Job, 'id' | 'dateAdded'>) => void;
+    addJob: (job: Omit<Job, 'id' | 'dateAdded'>) => Promise<Job>;
     updateJob: (id: string, updates: Partial<Job>) => void;
     deleteJob: (id: string) => void;
     addNote: (note: Omit<Note, 'id' | 'date'>) => void;
@@ -162,10 +162,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
 
-    const addJob = async (jobData: Omit<Job, 'id' | 'dateAdded'>) => {
+    const addJob = async (jobData: Omit<Job, 'id' | 'dateAdded'>): Promise<Job> => {
         const newJob: Job = { ...jobData, id: generateId(), dateAdded: new Date().toISOString() };
         setJobs(prev => [newJob, ...prev]); // Optimistic update
-        
+
         if (dbConfig.enabled) {
             setSyncStatus('syncing');
             try {
@@ -176,6 +176,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 setSyncStatus('error');
             }
         }
+        return newJob;
     };
 
     const updateJob = async (id: string, updates: Partial<Job>) => {

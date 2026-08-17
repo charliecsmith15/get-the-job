@@ -26,7 +26,7 @@ images:
 
 substitutions:
   _GOOGLE_CLOUD_LOCATION: us-central1
-  _GOOGLE_CLIENT_ID: ''
+  _GOOGLE_CLIENT_ID: '948539209903-qku75f835du8coue8a6ld6g29aocif8k.apps.googleusercontent.com'
   _GOOGLE_API_KEY: ''
   _BACKEND_URL: ''
 

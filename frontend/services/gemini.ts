@@ -72,12 +72,14 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
                             description: "List of 1-3 potential red flags or mismatches based on the user's career profile and dealbreakers."
                         },
                         fitReason: {
-                            type: Type.STRING,
-                            description: "A substantive paragraph answering: why is this person a good fit for this specific role? Reference their background, skills, and career profile directly."
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING },
+                            description: "3-5 bullet points explaining why this person is a good fit for this specific role. Each bullet should be a concise, complete sentence referencing their background, skills, or career profile directly."
                         },
                         resumeEdits: {
-                            type: Type.STRING,
-                            description: "Specific, actionable edits the user should make to their resume to stand out for this role. Reference actual content from their resume and the job description."
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING },
+                            description: "3-5 general resume improvement suggestions to help this person stand out for this type of role. Keep suggestions high-level and directional (e.g. 'Emphasize leadership experience', 'Highlight data-driven outcomes') rather than prescribing specific line edits."
                         }
                     },
                     required: ["score", "pros", "cons", "fitReason", "resumeEdits"]
@@ -158,7 +160,7 @@ export const generateTailoredResume = async (jobDescription: string, baseResume:
 }
 
 export const generateInterviewQuestions = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[], journalEntries: { date: string; content: string }[]) => {
-    const prompt = `Generate 5 highly relevant interview questions for this role, and a brief tip on how I should answer each based on my background and career profile.
+    const prompt = `Generate 5 highly relevant interview questions for this role. Return only the questions — no answers, no tips, no explanations for why each question was chosen.
 
     ${buildFoundationalContext(preferences, contextResources, journalEntries)}
 

@@ -3,26 +3,33 @@ import { useAppStore } from '../store';
 import { JobStatus, Job } from '../types';
 import { Card, Button, Badge, Input } from '../components/UI';
 import { Plus, ExternalLink, Search, MapPin, Calendar, ChevronRight, X } from 'lucide-react';
+import { analyzeJobMatch } from '../services/gemini';
 
 const COLUMNS: JobStatus[] = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
 
 const BLANK_JOB: Partial<Job> = { title: '', company: '', status: 'Saved', url: '', description: '', location: '', dateApplied: '' };
 
 export const JobBoard: React.FC = () => {
-    const { jobs, jobAnalyses, addJob, updateJob, navigate } = useAppStore();
+    const { jobs, jobAnalyses, addJob, updateJob, navigate, preferences, contextResources, journalEntries, setJobAnalysis } = useAppStore();
     const [isAdding, setIsAdding] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [newJob, setNewJob] = useState<Partial<Job>>(BLANK_JOB);
     const [tagsInput, setTagsInput] = useState('');
 
-    const handleAddJob = (e: React.FormEvent) => {
+    const handleAddJob = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newJob.company || !newJob.url) return;
         const tags = tagsInput.trim() ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : [];
-        addJob({ ...newJob, tags } as Omit<Job, 'id' | 'dateAdded'>);
+        const created = await addJob({ ...newJob, tags } as Omit<Job, 'id' | 'dateAdded'>);
         setIsAdding(false);
         setNewJob(BLANK_JOB);
         setTagsInput('');
+
+        if (created.description) {
+            analyzeJobMatch(created.description, preferences, contextResources, journalEntries)
+                .then(result => setJobAnalysis(created.id, result))
+                .catch(err => console.error('Auto-analysis failed:', err));
+        }
     };
 
     const filteredJobs = jobs.filter(job =>

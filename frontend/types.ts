@@ -20,8 +20,8 @@ export interface JobAnalysis {
     score: number;
     pros: string[];
     cons: string[];
-    fitReason: string;
-    resumeEdits: string;
+    fitReason: string[];
+    resumeEdits: string[];
     createdAt: string;
 }
 

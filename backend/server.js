@@ -388,10 +388,21 @@ app.put('/api/jobs/:id', requireDb, async (req, res) => {
   try {
     const j = req.body;
     await pool.query(
-      `UPDATE jobs SET title=$2, company=$3, status=$4, url=$5, description=$6,
-       location=$7, tags=$8, "dateApplied"=$9, "customFields"=$10 WHERE id=$1`,
-      [req.params.id, j.title, j.company, j.status, j.url, j.description,
-       j.location, JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {})]
+      `UPDATE jobs SET
+         title        = COALESCE($2, title),
+         company      = COALESCE($3, company),
+         status       = COALESCE($4, status),
+         url          = COALESCE($5, url),
+         description  = COALESCE($6, description),
+         location     = COALESCE($7, location),
+         tags         = $8,
+         "dateApplied"   = $9,
+         "customFields"  = $10
+       WHERE id=$1`,
+      [req.params.id,
+       j.title   || null, j.company || null, j.status || null,
+       j.url     || null, j.description || null, j.location || null,
+       JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {})]
     );
     res.status(204).end();
   } catch (e) { dbError(res, e); }

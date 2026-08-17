@@ -147,7 +147,12 @@ export const JobDetail: React.FC = () => {
         alert("Saved to Resume Database!");
     };
 
-    const analysis = jobAnalyses.find(a => a.jobId === job.id) ?? null;
+    const rawAnalysis = jobAnalyses.find(a => a.jobId === job.id) ?? null;
+    const analysis = rawAnalysis ? {
+        ...rawAnalysis,
+        fitReason: Array.isArray(rawAnalysis.fitReason) ? rawAnalysis.fitReason : [rawAnalysis.fitReason as unknown as string],
+        resumeEdits: Array.isArray(rawAnalysis.resumeEdits) ? rawAnalysis.resumeEdits : [rawAnalysis.resumeEdits as unknown as string],
+    } : null;
 
     return (
         <div className="max-w-5xl mx-auto crm-enter pb-12">

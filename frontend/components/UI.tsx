@@ -2,7 +2,8 @@ import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
 // Renders **bold** markdown as <strong> inline. Preserves line breaks via whitespace-pre-wrap on the parent.
-export const renderBold = (text: string): React.ReactNode => {
+export const renderBold = (text: string | null | undefined): React.ReactNode => {
+    if (!text) return text ?? null;
     const parts = text.split(/\*\*(.*?)\*\*/gs);
     return parts.map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part);
 };

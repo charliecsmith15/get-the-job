@@ -596,11 +596,10 @@ app.get('/api/job-analyses', requireDb, async (req, res) => {
 app.put('/api/job-analyses/:jobId', requireDb, async (req, res) => {
   try {
     const a = req.body;
+    await pool.query('DELETE FROM job_analyses WHERE "jobId"=$1', [req.params.jobId]);
     await pool.query(
       `INSERT INTO job_analyses (id, "jobId", score, pros, cons, "fitReason", "resumeEdits", "createdAt")
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-       ON CONFLICT ("jobId") DO UPDATE SET
-         id=$1, score=$3, pros=$4, cons=$5, "fitReason"=$6, "resumeEdits"=$7, "createdAt"=$8`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
       [a.id, req.params.jobId, a.score, JSON.stringify(a.pros ?? []), JSON.stringify(a.cons ?? []),
        a.fitReason, a.resumeEdits, a.createdAt]
     );

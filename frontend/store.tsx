@@ -110,7 +110,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             .then(r => r.json())
             .then(({ backendUrl }) => {
                 if (backendUrl) {
-                    setDbConfig({ enabled: true, url: backendUrl });
+                    const config = { enabled: true, url: backendUrl };
+                    setDbConfig(config);
+                    localStorage.setItem('getthejob_db_config', JSON.stringify(config));
                 }
             })
             .catch(() => {});

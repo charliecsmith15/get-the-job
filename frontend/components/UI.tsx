@@ -1,8 +1,8 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
-export const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <div className={`crm-card rounded-xl overflow-hidden ${className}`}>
+export const Card: React.FC<React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode; className?: string }> = ({ children, className = '', ...props }) => (
+    <div className={`crm-card rounded-xl overflow-hidden ${className}`} {...props}>
         {children}
     </div>
 );

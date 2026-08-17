@@ -99,13 +99,20 @@ export const PreferencesView: React.FC = () => {
                     <p>Paste your completed Petals Exercise below. The AI uses this as its primary context when scoring job matches and answering questions in the companion.</p>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                     <Textarea
                         label="Completed Petals Exercise"
                         rows={16}
                         placeholder="Paste your completed Petals Exercise here. This is your single source of truth for what your ideal job looks like — the AI will use this as context when analysing job matches and answering questions."
                         value={form.petalsExercise}
                         onChange={e => setForm({...form, petalsExercise: e.target.value})}
+                    />
+                    <Textarea
+                        label="LinkedIn Profile"
+                        rows={10}
+                        placeholder="Paste your LinkedIn profile text here (About section, experience, skills, etc.). The AI uses this to tailor resume suggestions and interview prep to your actual background."
+                        value={form.linkedInProfile ?? ''}
+                        onChange={e => setForm({...form, linkedInProfile: e.target.value})}
                     />
                 </div>
 

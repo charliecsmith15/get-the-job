@@ -68,7 +68,7 @@ export const JobDetail: React.FC = () => {
         if (!job.description) return alert("Please add a job description first.");
         setIsAnalyzing(true);
         try {
-            const result = await analyzeJobMatch(job.description, preferences, contextResources);
+            const result = await analyzeJobMatch(job.description, preferences, contextResources, resumes);
             updateJob(job.id, { 
                 matchScore: result.score, 
                 matchAnalysis: JSON.stringify(result) 
@@ -84,7 +84,7 @@ export const JobDetail: React.FC = () => {
         if (!job.description) return alert("Please add a job description first.");
         setIsGeneratingQuestions(true);
         try {
-            const result = await generateInterviewQuestions(job.description);
+            const result = await generateInterviewQuestions(job.description, preferences, contextResources, resumes);
             setAiQuestions(result);
         } catch (error) {
             alert("Failed to generate questions.");
@@ -100,7 +100,7 @@ export const JobDetail: React.FC = () => {
         
         setIsTailoring(true);
         try {
-            const result = await tailorResumeSuggestion(job.description, resume);
+            const result = await tailorResumeSuggestion(job.description, resume, preferences, contextResources);
             setAiTailorAdvice(result);
             setTailoredResumeContent(null); // Clear full resume if switching to advice
         } catch (error) {
@@ -117,7 +117,7 @@ export const JobDetail: React.FC = () => {
         
         setIsGeneratingResume(true);
         try {
-            const result = await generateTailoredResume(job.description, resume);
+            const result = await generateTailoredResume(job.description, resume, preferences, contextResources);
             setTailoredResumeContent(result);
             setAiTailorAdvice(null); // Clear advice if switching to full resume
         } catch (error) {

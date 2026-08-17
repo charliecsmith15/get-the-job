@@ -45,8 +45,10 @@ CREATE TABLE IF NOT EXISTS context_resources (
 CREATE TABLE IF NOT EXISTS preferences (
     id INT PRIMARY KEY DEFAULT 1,
     "petalsExercise" TEXT,
+    "linkedInProfile" TEXT,
     CONSTRAINT single_row CHECK (id = 1)
 );
+-- Migration: ALTER TABLE preferences ADD COLUMN IF NOT EXISTS "linkedInProfile" TEXT;
 
 CREATE TABLE IF NOT EXISTS journal_entries (
     id VARCHAR(50) PRIMARY KEY,

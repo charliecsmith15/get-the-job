@@ -1,6 +1,26 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { Preferences, Resume, ContextResource } from '../types';
 
+const buildFoundationalContext = (
+    preferences: Preferences,
+    contextResources: ContextResource[],
+    resumes?: Resume[]
+) => `
+=== FOUNDATIONAL CAREER CONTEXT — treat as primary reference for all responses ===
+
+IDEAL JOB PROFILE (Petals Exercise / What Color Is Your Parachute):
+${preferences.petalsExercise || 'Not provided.'}
+
+LINKEDIN PROFILE:
+${preferences.linkedInProfile || 'Not provided.'}
+
+${resumes?.length ? `RESUME(S):\n${resumes.map(r => `[${r.name}${r.targetRole ? ` — Target: ${r.targetRole}` : ''}]\n${r.content}`).join('\n\n---\n\n')}` : ''}
+
+CONTEXT RESOURCES (What Color Is Your Parachute notes, career criteria, etc.):
+${contextResources.length ? contextResources.map(c => `[${c.title}]\n${c.content}`).join('\n\n') : 'None added yet.'}
+=== END FOUNDATIONAL CONTEXT ===
+`;
+
 // Initialize the Gemini client
 // Note: In a real app, ensure process.env.API_KEY is available in the environment.
 const ai = new GoogleGenAI({
@@ -8,19 +28,13 @@ const ai = new GoogleGenAI({
   apiKey: process.env.API_KEY || 'proxy-placeholder',
 });
 
-export const analyzeJobMatch = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[]) => {
-    const contextText = contextResources.map(c => `--- ${c.title} ---\n${c.content}`).join('\n\n');
-
+export const analyzeJobMatch = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[], resumes: Resume[]) => {
     const prompt = `
-    Analyze the following job description against my ideal job profile and additional context.
+    Analyze the following job description against my career profile and context.
 
-    My Ideal Job Profile (Petals Exercise):
-    ${preferences.petalsExercise || 'Not provided.'}
+    ${buildFoundationalContext(preferences, contextResources, resumes)}
 
-    Additional Context & Resources:
-    ${contextText || 'None provided.'}
-
-    Job Description:
+    Job Description to Analyze:
     ${jobDescription}
     `;
 
@@ -64,14 +78,16 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
     }
 };
 
-export const tailorResumeSuggestion = async (jobDescription: string, baseResume: Resume) => {
+export const tailorResumeSuggestion = async (jobDescription: string, baseResume: Resume, preferences: Preferences, contextResources: ContextResource[]) => {
     const prompt = `
-    I am applying for a job. Please review my current resume and the job description, and suggest specific improvements or tailoring I should make to my resume to increase my chances.
+    I am applying for a job. Review my resume and the job description, and suggest specific improvements to increase my chances. Ground your advice in my career profile and foundational context.
+
+    ${buildFoundationalContext(preferences, contextResources)}
 
     Job Description:
     ${jobDescription}
 
-    My Current Resume (${baseResume.name}):
+    Resume Being Tailored (${baseResume.name}):
     ${baseResume.content}
     `;
 
@@ -80,7 +96,7 @@ export const tailorResumeSuggestion = async (jobDescription: string, baseResume:
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
-                systemInstruction: "You are an expert career coach and resume writer. Provide actionable, specific advice.",
+                systemInstruction: "You are an expert career coach and resume writer. Provide actionable, specific advice grounded in the user's foundational career context and Petals Exercise.",
             }
         });
         return response.text;
@@ -90,17 +106,18 @@ export const tailorResumeSuggestion = async (jobDescription: string, baseResume:
     }
 }
 
-export const generateTailoredResume = async (jobDescription: string, baseResume: Resume) => {
+export const generateTailoredResume = async (jobDescription: string, baseResume: Resume, preferences: Preferences, contextResources: ContextResource[]) => {
    const prompt = `
-   I am applying for a job. Please rewrite and tailor my current resume to perfectly match the provided job description. 
-   Highlight the most relevant experience, adjust keywords to match the job description, and ensure the formatting remains clean Markdown.
-   Do not invent fake experience, but reframe existing experience to be as relevant as possible.
+   Rewrite and tailor my resume to match the job description. Highlight the most relevant experience, adjust keywords, and keep formatting clean Markdown.
+   Do not invent experience — reframe what exists. Let my career profile and foundational context guide which aspects of my background to emphasize.
    Return ONLY the raw Markdown content of the new resume.
+
+   ${buildFoundationalContext(preferences, contextResources)}
 
    Job Description:
    ${jobDescription}
 
-   My Current Resume (${baseResume.name}):
+   Base Resume (${baseResume.name}):
    ${baseResume.content}
    `;
 
@@ -126,9 +143,11 @@ export const generateTailoredResume = async (jobDescription: string, baseResume:
    }
 }
 
-export const generateInterviewQuestions = async (jobDescription: string) => {
-    const prompt = `Based on the following job description, generate 5 highly relevant interview questions they might ask me, and provide a brief tip on how to answer each.
-    
+export const generateInterviewQuestions = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[], resumes: Resume[]) => {
+    const prompt = `Generate 5 highly relevant interview questions for this role, and a brief tip on how I should answer each based on my background and career profile.
+
+    ${buildFoundationalContext(preferences, contextResources, resumes)}
+
     Job Description:
     ${jobDescription}`;
 
@@ -161,14 +180,10 @@ export const chatWithCompanion = async (
 
     const systemInstruction = `
     You are an expert AI career coach and job search companion.
-    You have access to the user's job search data. Use this context to provide personalized, highly relevant advice.
+    You have access to the user's full career profile and job search data. Always ground your advice in their foundational context — especially the Petals Exercise, What Color Is Your Parachute notes, LinkedIn profile, and resumes.
     Keep your answers concise, encouraging, and actionable.
 
-    --- IDEAL JOB PROFILE (PETALS EXERCISE) ---
-    ${appState.preferences.petalsExercise || 'Not provided.'}
-
-    --- CONTEXT RESOURCES ---
-    ${appState.contextResources.map((c: any) => `${c.title}:\n${c.content}`).join('\n\n') || 'None.'}
+    ${buildFoundationalContext(appState.preferences, appState.contextResources, appState.resumes)}
 
     --- RECENT SEARCH JOURNAL (last 14 entries) ---
     ${recentJournal || 'No journal entries yet.'}
@@ -186,9 +201,6 @@ export const chatWithCompanion = async (
         j.matchScore ? `Match Score: ${j.matchScore}%` : '',
         j.matchAnalysis ? `Match Analysis: ${j.matchAnalysis}` : '',
     ].filter(Boolean).join('\n')).join('\n\n')}
-
-    --- RESUMES ---
-    ${appState.resumes.map((r: any) => `## ${r.name} (Target Role: ${r.targetRole})\n${r.content}`).join('\n\n')}
     `;
 
     const contents = history.map(msg => ({

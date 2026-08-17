@@ -360,166 +360,219 @@ const requireDb = (req, res, next) => {
 
 // ── API routes ───────────────────────────────────────────────────────────────
 
+const dbError = (res, err) => {
+  console.error('[DB Error]', err.message);
+  res.status(500).json({ error: err.message });
+};
+
 // Jobs
 app.get('/api/jobs', requireDb, async (req, res) => {
-  const { rows } = await pool.query('SELECT * FROM jobs ORDER BY "dateAdded" DESC');
-  res.json(rows);
+  try {
+    const { rows } = await pool.query('SELECT * FROM jobs ORDER BY "dateAdded" DESC');
+    res.json(rows);
+  } catch (e) { dbError(res, e); }
 });
 app.post('/api/jobs', requireDb, async (req, res) => {
-  const j = req.body;
-  await pool.query(
-    `INSERT INTO jobs (id, title, company, status, url, description, "dateAdded", "matchScore", "matchAnalysis", location, tags, "dateApplied", "customFields")
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT (id) DO NOTHING`,
-    [j.id, j.title, j.company, j.status, j.url, j.description, j.dateAdded, j.matchScore || null, j.matchAnalysis, j.location,
-     JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {})]
-  );
-  res.status(201).json(j);
+  try {
+    const j = req.body;
+    await pool.query(
+      `INSERT INTO jobs (id, title, company, status, url, description, "dateAdded", "matchScore", "matchAnalysis", location, tags, "dateApplied", "customFields")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT (id) DO NOTHING`,
+      [j.id, j.title, j.company, j.status, j.url, j.description, j.dateAdded, j.matchScore || null, j.matchAnalysis, j.location,
+       JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {})]
+    );
+    res.status(201).json(j);
+  } catch (e) { dbError(res, e); }
 });
 app.put('/api/jobs/:id', requireDb, async (req, res) => {
-  const j = req.body;
-  await pool.query(
-    `UPDATE jobs SET title=$2, company=$3, status=$4, url=$5, description=$6, "matchScore"=$7, "matchAnalysis"=$8,
-     location=$9, tags=$10, "dateApplied"=$11, "customFields"=$12 WHERE id=$1`,
-    [req.params.id, j.title, j.company, j.status, j.url, j.description, j.matchScore || null, j.matchAnalysis,
-     j.location, JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {})]
-  );
-  res.status(204).end();
+  try {
+    const j = req.body;
+    await pool.query(
+      `UPDATE jobs SET title=$2, company=$3, status=$4, url=$5, description=$6, "matchScore"=$7, "matchAnalysis"=$8,
+       location=$9, tags=$10, "dateApplied"=$11, "customFields"=$12 WHERE id=$1`,
+      [req.params.id, j.title, j.company, j.status, j.url, j.description, j.matchScore || null, j.matchAnalysis,
+       j.location, JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {})]
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
 });
 app.delete('/api/jobs/:id', requireDb, async (req, res) => {
-  await pool.query('DELETE FROM jobs WHERE id=$1', [req.params.id]);
-  res.status(204).end();
+  try {
+    await pool.query('DELETE FROM jobs WHERE id=$1', [req.params.id]);
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
 });
 
 // Notes
 app.get('/api/notes', requireDb, async (req, res) => {
-  const { rows } = await pool.query('SELECT * FROM notes ORDER BY date DESC');
-  res.json(rows);
+  try {
+    const { rows } = await pool.query('SELECT * FROM notes ORDER BY date DESC');
+    res.json(rows);
+  } catch (e) { dbError(res, e); }
 });
 app.post('/api/notes', requireDb, async (req, res) => {
-  const n = req.body;
-  await pool.query(
-    `INSERT INTO notes (id, "jobId", type, title, content, date, "isAiGenerated")
-     VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO NOTHING`,
-    [n.id, n.jobId, n.type, n.title, n.content, n.date, n.isAiGenerated ?? false]
-  );
-  res.status(201).json(n);
+  try {
+    const n = req.body;
+    await pool.query(
+      `INSERT INTO notes (id, "jobId", type, title, content, date, "isAiGenerated")
+       VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO NOTHING`,
+      [n.id, n.jobId, n.type, n.title, n.content, n.date, n.isAiGenerated ?? false]
+    );
+    res.status(201).json(n);
+  } catch (e) { dbError(res, e); }
 });
 app.delete('/api/notes/:id', requireDb, async (req, res) => {
-  await pool.query('DELETE FROM notes WHERE id=$1', [req.params.id]);
-  res.status(204).end();
+  try {
+    await pool.query('DELETE FROM notes WHERE id=$1', [req.params.id]);
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
 });
 
 // Resumes
 app.get('/api/resumes', requireDb, async (req, res) => {
-  const { rows } = await pool.query('SELECT * FROM resumes ORDER BY "lastUpdated" DESC');
-  res.json(rows);
+  try {
+    const { rows } = await pool.query('SELECT * FROM resumes ORDER BY "lastUpdated" DESC');
+    res.json(rows);
+  } catch (e) { dbError(res, e); }
 });
 app.post('/api/resumes', requireDb, async (req, res) => {
-  const r = req.body;
-  await pool.query(
-    `INSERT INTO resumes (id, name, content, "targetRole", "lastUpdated")
-     VALUES ($1,$2,$3,$4,$5) ON CONFLICT (id) DO NOTHING`,
-    [r.id, r.name, r.content, r.targetRole, r.lastUpdated]
-  );
-  res.status(201).json(r);
+  try {
+    const r = req.body;
+    await pool.query(
+      `INSERT INTO resumes (id, name, content, "targetRole", "lastUpdated")
+       VALUES ($1,$2,$3,$4,$5) ON CONFLICT (id) DO NOTHING`,
+      [r.id, r.name, r.content, r.targetRole, r.lastUpdated]
+    );
+    res.status(201).json(r);
+  } catch (e) { dbError(res, e); }
 });
 app.put('/api/resumes/:id', requireDb, async (req, res) => {
-  const r = req.body;
-  await pool.query(
-    `UPDATE resumes SET name=$2, content=$3, "targetRole"=$4, "lastUpdated"=$5 WHERE id=$1`,
-    [req.params.id, r.name, r.content, r.targetRole, r.lastUpdated]
-  );
-  res.status(204).end();
+  try {
+    const r = req.body;
+    await pool.query(
+      `UPDATE resumes SET name=$2, content=$3, "targetRole"=$4, "lastUpdated"=$5 WHERE id=$1`,
+      [req.params.id, r.name, r.content, r.targetRole, r.lastUpdated]
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
 });
 app.delete('/api/resumes/:id', requireDb, async (req, res) => {
-  await pool.query('DELETE FROM resumes WHERE id=$1', [req.params.id]);
-  res.status(204).end();
+  try {
+    await pool.query('DELETE FROM resumes WHERE id=$1', [req.params.id]);
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
 });
 
 // Context Resources
 app.get('/api/context', requireDb, async (req, res) => {
-  const { rows } = await pool.query('SELECT * FROM context_resources ORDER BY "dateAdded" DESC');
-  res.json(rows);
+  try {
+    const { rows } = await pool.query('SELECT * FROM context_resources ORDER BY "dateAdded" DESC');
+    res.json(rows);
+  } catch (e) { dbError(res, e); }
 });
 app.post('/api/context', requireDb, async (req, res) => {
-  const c = req.body;
-  await pool.query(
-    `INSERT INTO context_resources (id, title, content, "dateAdded") VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO NOTHING`,
-    [c.id, c.title, c.content, c.dateAdded]
-  );
-  res.status(201).json(c);
+  try {
+    const c = req.body;
+    await pool.query(
+      `INSERT INTO context_resources (id, title, content, "dateAdded") VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO NOTHING`,
+      [c.id, c.title, c.content, c.dateAdded]
+    );
+    res.status(201).json(c);
+  } catch (e) { dbError(res, e); }
 });
 app.delete('/api/context/:id', requireDb, async (req, res) => {
-  await pool.query('DELETE FROM context_resources WHERE id=$1', [req.params.id]);
-  res.status(204).end();
+  try {
+    await pool.query('DELETE FROM context_resources WHERE id=$1', [req.params.id]);
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
 });
 
 // Preferences (single row, id=1)
 app.get('/api/preferences', requireDb, async (req, res) => {
-  const { rows } = await pool.query('SELECT * FROM preferences WHERE id=1');
-  res.json(rows[0] ?? {});
+  try {
+    const { rows } = await pool.query('SELECT * FROM preferences WHERE id=1');
+    res.json(rows[0] ?? {});
+  } catch (e) { dbError(res, e); }
 });
 app.put('/api/preferences', requireDb, async (req, res) => {
-  const p = req.body;
-  await pool.query(
-    `INSERT INTO preferences (id, "petalsExercise", "linkedInProfile", "primaryResume") VALUES (1,$1,$2,$3)
-     ON CONFLICT (id) DO UPDATE SET "petalsExercise"=$1, "linkedInProfile"=$2, "primaryResume"=$3`,
-    [p.petalsExercise, p.linkedInProfile ?? null, p.primaryResume ?? null]
-  );
-  res.status(204).end();
+  try {
+    const p = req.body;
+    await pool.query(
+      `INSERT INTO preferences (id, "petalsExercise", "linkedInProfile", "primaryResume") VALUES (1,$1,$2,$3)
+       ON CONFLICT (id) DO UPDATE SET "petalsExercise"=$1, "linkedInProfile"=$2, "primaryResume"=$3`,
+      [p.petalsExercise, p.linkedInProfile ?? null, p.primaryResume ?? null]
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
 });
 
 // Journal Entries
 app.get('/api/journal', requireDb, async (req, res) => {
-  const { rows } = await pool.query('SELECT * FROM journal_entries ORDER BY date DESC');
-  res.json(rows);
+  try {
+    const { rows } = await pool.query('SELECT * FROM journal_entries ORDER BY date DESC');
+    res.json(rows);
+  } catch (e) { dbError(res, e); }
 });
 app.post('/api/journal', requireDb, async (req, res) => {
-  const e = req.body;
-  await pool.query(
-    `INSERT INTO journal_entries (id, date, content) VALUES ($1,$2,$3) ON CONFLICT (id) DO NOTHING`,
-    [e.id, e.date, e.content]
-  );
-  res.status(201).json(e);
+  try {
+    const e = req.body;
+    await pool.query(
+      `INSERT INTO journal_entries (id, date, content) VALUES ($1,$2,$3) ON CONFLICT (id) DO NOTHING`,
+      [e.id, e.date, e.content]
+    );
+    res.status(201).json(e);
+  } catch (e) { dbError(res, e); }
 });
 app.put('/api/journal/:id', requireDb, async (req, res) => {
-  const e = req.body;
-  await pool.query(
-    `UPDATE journal_entries SET date=$2, content=$3 WHERE id=$1`,
-    [req.params.id, e.date, e.content]
-  );
-  res.status(204).end();
+  try {
+    const e = req.body;
+    await pool.query(
+      `UPDATE journal_entries SET date=$2, content=$3 WHERE id=$1`,
+      [req.params.id, e.date, e.content]
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
 });
 app.delete('/api/journal/:id', requireDb, async (req, res) => {
-  await pool.query('DELETE FROM journal_entries WHERE id=$1', [req.params.id]);
-  res.status(204).end();
+  try {
+    await pool.query('DELETE FROM journal_entries WHERE id=$1', [req.params.id]);
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
 });
 
 // Interview Questions
 app.get('/api/interview-questions', requireDb, async (req, res) => {
-  const { rows } = await pool.query('SELECT * FROM interview_questions ORDER BY "dateAdded" DESC');
-  res.json(rows);
+  try {
+    const { rows } = await pool.query('SELECT * FROM interview_questions ORDER BY "dateAdded" DESC');
+    res.json(rows);
+  } catch (e) { dbError(res, e); }
 });
 app.post('/api/interview-questions', requireDb, async (req, res) => {
-  const q = req.body;
-  await pool.query(
-    `INSERT INTO interview_questions (id, question, response, category, "dateAdded")
-     VALUES ($1,$2,$3,$4,$5) ON CONFLICT (id) DO NOTHING`,
-    [q.id, q.question, q.response, q.category ?? 'General', q.dateAdded]
-  );
-  res.status(201).json(q);
+  try {
+    const q = req.body;
+    await pool.query(
+      `INSERT INTO interview_questions (id, question, response, category, "dateAdded")
+       VALUES ($1,$2,$3,$4,$5) ON CONFLICT (id) DO NOTHING`,
+      [q.id, q.question, q.response, q.category ?? 'General', q.dateAdded]
+    );
+    res.status(201).json(q);
+  } catch (e) { dbError(res, e); }
 });
 app.put('/api/interview-questions/:id', requireDb, async (req, res) => {
-  const q = req.body;
-  await pool.query(
-    `UPDATE interview_questions SET question=$2, response=$3, category=$4 WHERE id=$1`,
-    [req.params.id, q.question, q.response, q.category ?? 'General']
-  );
-  res.status(204).end();
+  try {
+    const q = req.body;
+    await pool.query(
+      `UPDATE interview_questions SET question=$2, response=$3, category=$4 WHERE id=$1`,
+      [req.params.id, q.question, q.response, q.category ?? 'General']
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
 });
 app.delete('/api/interview-questions/:id', requireDb, async (req, res) => {
-  await pool.query('DELETE FROM interview_questions WHERE id=$1', [req.params.id]);
-  res.status(204).end();
+  try {
+    await pool.query('DELETE FROM interview_questions WHERE id=$1', [req.params.id]);
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
 });
 
 // ── Server ───────────────────────────────────────────────────────────────────

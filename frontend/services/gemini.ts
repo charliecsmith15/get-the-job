@@ -1,11 +1,18 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { Preferences, Resume, ContextResource } from '../types';
+import { Preferences, Resume, ContextResource } from '../types'; // Resume kept for tailorResumeSuggestion/generateTailoredResume baseResume param
 
 const buildFoundationalContext = (
     preferences: Preferences,
     contextResources: ContextResource[],
-    resumes?: Resume[]
-) => `
+    journalEntries?: { date: string; content: string }[]
+) => {
+    const recentJournal = journalEntries
+        ?.filter(e => (Date.now() - new Date(e.date).getTime()) / 86400000 <= 14)
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .map(e => `${e.date}: ${e.content}`)
+        .join('\n\n');
+
+    return `
 === FOUNDATIONAL CAREER CONTEXT — treat as primary reference for all responses ===
 
 IDEAL JOB PROFILE (Petals Exercise / What Color Is Your Parachute):
@@ -14,12 +21,15 @@ ${preferences.petalsExercise || 'Not provided.'}
 LINKEDIN PROFILE:
 ${preferences.linkedInProfile || 'Not provided.'}
 
-${resumes?.length ? `RESUME(S):\n${resumes.map(r => `[${r.name}${r.targetRole ? ` — Target: ${r.targetRole}` : ''}]\n${r.content}`).join('\n\n---\n\n')}` : ''}
+PRIMARY RESUME:
+${preferences.primaryResume || 'Not provided.'}
 
 CONTEXT RESOURCES (What Color Is Your Parachute notes, career criteria, etc.):
 ${contextResources.length ? contextResources.map(c => `[${c.title}]\n${c.content}`).join('\n\n') : 'None added yet.'}
+${recentJournal ? `\nRECENT JOURNAL (last 14 days):\n${recentJournal}` : ''}
 === END FOUNDATIONAL CONTEXT ===
 `;
+};
 
 // Initialize the Gemini client
 // Note: In a real app, ensure process.env.API_KEY is available in the environment.
@@ -28,11 +38,11 @@ const ai = new GoogleGenAI({
   apiKey: process.env.API_KEY || 'proxy-placeholder',
 });
 
-export const analyzeJobMatch = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[], resumes: Resume[]) => {
+export const analyzeJobMatch = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[], journalEntries: { date: string; content: string }[]) => {
     const prompt = `
     Analyze the following job description against my career profile and context.
 
-    ${buildFoundationalContext(preferences, contextResources, resumes)}
+    ${buildFoundationalContext(preferences, contextResources, journalEntries)}
 
     Job Description to Analyze:
     ${jobDescription}
@@ -78,11 +88,11 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
     }
 };
 
-export const tailorResumeSuggestion = async (jobDescription: string, baseResume: Resume, preferences: Preferences, contextResources: ContextResource[]) => {
+export const tailorResumeSuggestion = async (jobDescription: string, baseResume: Resume, preferences: Preferences, contextResources: ContextResource[], journalEntries: { date: string; content: string }[]) => {
     const prompt = `
     I am applying for a job. Review my resume and the job description, and suggest specific improvements to increase my chances. Ground your advice in my career profile and foundational context.
 
-    ${buildFoundationalContext(preferences, contextResources)}
+    ${buildFoundationalContext(preferences, contextResources, journalEntries)}
 
     Job Description:
     ${jobDescription}
@@ -106,13 +116,13 @@ export const tailorResumeSuggestion = async (jobDescription: string, baseResume:
     }
 }
 
-export const generateTailoredResume = async (jobDescription: string, baseResume: Resume, preferences: Preferences, contextResources: ContextResource[]) => {
+export const generateTailoredResume = async (jobDescription: string, baseResume: Resume, preferences: Preferences, contextResources: ContextResource[], journalEntries: { date: string; content: string }[]) => {
    const prompt = `
    Rewrite and tailor my resume to match the job description. Highlight the most relevant experience, adjust keywords, and keep formatting clean Markdown.
    Do not invent experience — reframe what exists. Let my career profile and foundational context guide which aspects of my background to emphasize.
    Return ONLY the raw Markdown content of the new resume.
 
-   ${buildFoundationalContext(preferences, contextResources)}
+   ${buildFoundationalContext(preferences, contextResources, journalEntries)}
 
    Job Description:
    ${jobDescription}
@@ -143,10 +153,10 @@ export const generateTailoredResume = async (jobDescription: string, baseResume:
    }
 }
 
-export const generateInterviewQuestions = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[], resumes: Resume[]) => {
+export const generateInterviewQuestions = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[], journalEntries: { date: string; content: string }[]) => {
     const prompt = `Generate 5 highly relevant interview questions for this role, and a brief tip on how I should answer each based on my background and career profile.
 
-    ${buildFoundationalContext(preferences, contextResources, resumes)}
+    ${buildFoundationalContext(preferences, contextResources, journalEntries)}
 
     Job Description:
     ${jobDescription}`;
@@ -168,25 +178,16 @@ export const chatWithCompanion = async (
     history: { role: 'user' | 'model', text: string }[],
     appState: any
 ) => {
-    const recentJournal = (appState.journalEntries || [])
-        .sort((a: any, b: any) => b.date.localeCompare(a.date))
-        .slice(0, 14)
-        .map((e: any) => `${e.date}: ${e.content}`)
-        .join('\n\n');
-
     const interviewQAs = (appState.interviewQuestions || [])
         .map((q: any) => `Q: ${q.question}\nA: ${q.response}`)
         .join('\n\n');
 
     const systemInstruction = `
     You are an expert AI career coach and job search companion.
-    You have access to the user's full career profile and job search data. Always ground your advice in their foundational context — especially the Petals Exercise, What Color Is Your Parachute notes, LinkedIn profile, and resumes.
+    You have access to the user's full career profile and job search data. Always ground your advice in their foundational context — especially the Petals Exercise, What Color Is Your Parachute notes, LinkedIn profile, and primary resume.
     Keep your answers concise, encouraging, and actionable.
 
-    ${buildFoundationalContext(appState.preferences, appState.contextResources, appState.resumes)}
-
-    --- RECENT SEARCH JOURNAL (last 14 entries) ---
-    ${recentJournal || 'No journal entries yet.'}
+    ${buildFoundationalContext(appState.preferences, appState.contextResources, appState.journalEntries)}
 
     --- INTERVIEW PREPARATION Q&A ---
     ${interviewQAs || 'No interview questions added yet.'}

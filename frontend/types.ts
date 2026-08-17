@@ -37,6 +37,7 @@ export interface Resume {
 export interface Preferences {
     petalsExercise: string;
     linkedInProfile?: string;
+    primaryResume?: string;
 }
 
 export interface ContextResource {

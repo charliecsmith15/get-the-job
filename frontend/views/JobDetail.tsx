@@ -6,7 +6,7 @@ import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, ge
 import { Job } from '../types';
 
 export const JobDetail: React.FC = () => {
-    const { jobs, notes, resumes, preferences, contextResources, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume } = useAppStore();
+    const { jobs, notes, resumes, preferences, contextResources, journalEntries, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume } = useAppStore();
     const [activeTab, setActiveTab] = useState<'details' | 'notes' | 'ai'>('details');
     
     // Edit State
@@ -68,7 +68,7 @@ export const JobDetail: React.FC = () => {
         if (!job.description) return alert("Please add a job description first.");
         setIsAnalyzing(true);
         try {
-            const result = await analyzeJobMatch(job.description, preferences, contextResources, resumes);
+            const result = await analyzeJobMatch(job.description, preferences, contextResources, journalEntries);
             updateJob(job.id, { 
                 matchScore: result.score, 
                 matchAnalysis: JSON.stringify(result) 
@@ -84,7 +84,7 @@ export const JobDetail: React.FC = () => {
         if (!job.description) return alert("Please add a job description first.");
         setIsGeneratingQuestions(true);
         try {
-            const result = await generateInterviewQuestions(job.description, preferences, contextResources, resumes);
+            const result = await generateInterviewQuestions(job.description, preferences, contextResources, journalEntries);
             setAiQuestions(result);
         } catch (error) {
             alert("Failed to generate questions.");
@@ -100,7 +100,7 @@ export const JobDetail: React.FC = () => {
         
         setIsTailoring(true);
         try {
-            const result = await tailorResumeSuggestion(job.description, resume, preferences, contextResources);
+            const result = await tailorResumeSuggestion(job.description, resume, preferences, contextResources, journalEntries);
             setAiTailorAdvice(result);
             setTailoredResumeContent(null); // Clear full resume if switching to advice
         } catch (error) {
@@ -117,7 +117,7 @@ export const JobDetail: React.FC = () => {
         
         setIsGeneratingResume(true);
         try {
-            const result = await generateTailoredResume(job.description, resume, preferences, contextResources);
+            const result = await generateTailoredResume(job.description, resume, preferences, contextResources, journalEntries);
             setTailoredResumeContent(result);
             setAiTailorAdvice(null); // Clear advice if switching to full resume
         } catch (error) {

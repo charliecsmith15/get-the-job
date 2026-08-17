@@ -462,9 +462,9 @@ app.get('/api/preferences', requireDb, async (req, res) => {
 app.put('/api/preferences', requireDb, async (req, res) => {
   const p = req.body;
   await pool.query(
-    `INSERT INTO preferences (id, "petalsExercise", "linkedInProfile") VALUES (1,$1,$2)
-     ON CONFLICT (id) DO UPDATE SET "petalsExercise"=$1, "linkedInProfile"=$2`,
-    [p.petalsExercise, p.linkedInProfile ?? null]
+    `INSERT INTO preferences (id, "petalsExercise", "linkedInProfile", "primaryResume") VALUES (1,$1,$2,$3)
+     ON CONFLICT (id) DO UPDATE SET "petalsExercise"=$1, "linkedInProfile"=$2, "primaryResume"=$3`,
+    [p.petalsExercise, p.linkedInProfile ?? null, p.primaryResume ?? null]
   );
   res.status(204).end();
 });

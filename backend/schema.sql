@@ -46,9 +46,12 @@ CREATE TABLE IF NOT EXISTS preferences (
     id INT PRIMARY KEY DEFAULT 1,
     "petalsExercise" TEXT,
     "linkedInProfile" TEXT,
+    "primaryResume" TEXT,
     CONSTRAINT single_row CHECK (id = 1)
 );
--- Migration: ALTER TABLE preferences ADD COLUMN IF NOT EXISTS "linkedInProfile" TEXT;
+-- Migrations:
+-- ALTER TABLE preferences ADD COLUMN IF NOT EXISTS "linkedInProfile" TEXT;
+-- ALTER TABLE preferences ADD COLUMN IF NOT EXISTS "primaryResume" TEXT;
 
 CREATE TABLE IF NOT EXISTS journal_entries (
     id VARCHAR(50) PRIMARY KEY,

@@ -197,15 +197,18 @@ export const chatWithCompanion = async (
     ${interviewQAs || 'No interview questions added yet.'}
 
     --- CURRENT JOBS ---
-    ${appState.jobs.map((j: any) => [
-        `## ${j.title || 'Untitled'} at ${j.company} (Status: ${j.status})`,
-        j.location ? `Location: ${j.location}` : '',
-        j.dateApplied ? `Applied: ${j.dateApplied}` : '',
-        j.tags?.length ? `Tags: ${j.tags.join(', ')}` : '',
-        j.description ? `Description:\n${j.description}` : '',
-        j.matchScore ? `Match Score: ${j.matchScore}%` : '',
-        j.matchAnalysis ? `Match Analysis: ${j.matchAnalysis}` : '',
-    ].filter(Boolean).join('\n')).join('\n\n')}
+    ${appState.jobs.map((j: any) => {
+        const a = (appState.jobAnalyses ?? []).find((x: any) => x.jobId === j.id);
+        return [
+            `## ${j.title || 'Untitled'} at ${j.company} (Status: ${j.status})`,
+            j.location ? `Location: ${j.location}` : '',
+            j.dateApplied ? `Applied: ${j.dateApplied}` : '',
+            j.tags?.length ? `Tags: ${j.tags.join(', ')}` : '',
+            j.description ? `Description:\n${j.description}` : '',
+            a ? `Match Score: ${a.score}%` : '',
+            a?.fitReason ? `Why a good fit: ${a.fitReason}` : '',
+        ].filter(Boolean).join('\n');
+    }).join('\n\n')}
     `;
 
     const contents = history.map(msg => ({

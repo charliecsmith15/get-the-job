@@ -1,4 +1,4 @@
-import { Job, Note, Resume, Preferences, ContextResource, JournalEntry, InterviewQuestion } from '../types';
+import { Job, JobAnalysis, Note, Resume, Preferences, ContextResource, JournalEntry, InterviewQuestion } from '../types';
 
 /**
  * API Client for communicating with the SQL Backend.
@@ -116,5 +116,10 @@ export const createApiClient = (baseUrl: string) => {
         createInterviewQuestion: (q: InterviewQuestion): Promise<void> => fetch(`${baseUrl}/interview-questions`, { method: 'POST', headers, body: JSON.stringify(q) }).then(handleResponse),
         updateInterviewQuestion: (id: string, q: Partial<InterviewQuestion>): Promise<void> => fetch(`${baseUrl}/interview-questions/${id}`, { method: 'PUT', headers, body: JSON.stringify(q) }).then(handleResponse),
         deleteInterviewQuestion: (id: string): Promise<void> => fetch(`${baseUrl}/interview-questions/${id}`, { method: 'DELETE' }).then(handleResponse),
+
+        // Job Analyses
+        getJobAnalyses: (): Promise<JobAnalysis[]> => fetch(`${baseUrl}/job-analyses`).then(handleResponse),
+        upsertJobAnalysis: (analysis: JobAnalysis): Promise<void> => fetch(`${baseUrl}/job-analyses/${analysis.jobId}`, { method: 'PUT', headers, body: JSON.stringify(analysis) }).then(handleResponse),
+        deleteJobAnalysis: (jobId: string): Promise<void> => fetch(`${baseUrl}/job-analyses/${jobId}`, { method: 'DELETE' }).then(handleResponse),
     };
 };

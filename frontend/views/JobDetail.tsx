@@ -6,7 +6,7 @@ import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, ge
 import { Job } from '../types';
 
 export const JobDetail: React.FC = () => {
-    const { jobs, notes, resumes, preferences, contextResources, journalEntries, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume } = useAppStore();
+    const { jobs, notes, resumes, preferences, contextResources, journalEntries, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume, setJobAnalysis } = useAppStore();
     const [activeTab, setActiveTab] = useState<'details' | 'notes' | 'ai'>('details');
     
     // Edit State
@@ -69,10 +69,7 @@ export const JobDetail: React.FC = () => {
         setIsAnalyzing(true);
         try {
             const result = await analyzeJobMatch(job.description, preferences, contextResources, journalEntries);
-            updateJob(job.id, { 
-                matchScore: result.score, 
-                matchAnalysis: JSON.stringify(result) 
-            });
+            setJobAnalysis(job.id, result);
         } catch (error) {
             alert("Failed to analyze match. Check console or API key.");
         } finally {
@@ -150,7 +147,7 @@ export const JobDetail: React.FC = () => {
         alert("Saved to Resume Database!");
     };
 
-    const parsedAnalysis = job.matchAnalysis ? JSON.parse(job.matchAnalysis) : null;
+    const analysis = jobAnalyses.find(a => a.jobId === job.id) ?? null;
 
     return (
         <div className="max-w-5xl mx-auto crm-enter pb-12">
@@ -182,9 +179,9 @@ export const JobDetail: React.FC = () => {
                 <div className="pl-1">
                     <h1 className="text-xl sm:text-2xl font-bold text-ink flex flex-wrap items-center gap-2">
                         {job.title}
-                        {job.matchScore && (
-                            <Badge color={job.matchScore > 80 ? 'green' : job.matchScore > 50 ? 'yellow' : 'red'}>
-                                {job.matchScore}% Match
+                        {analysis && (
+                            <Badge color={analysis.score > 80 ? 'green' : analysis.score > 50 ? 'yellow' : 'red'}>
+                                {analysis.score}% Match
                             </Badge>
                         )}
                     </h1>
@@ -410,30 +407,30 @@ export const JobDetail: React.FC = () => {
                                 </Button>
                             </div>
 
-                            {parsedAnalysis ? (
+                            {analysis ? (
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <h4 className="font-medium text-sage flex items-center mb-2"><CheckCircle2 className="w-4 h-4 mr-1"/> Pros</h4>
                                             <ul className="space-y-2">
-                                                {parsedAnalysis.pros.map((pro: string, i: number) => <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-sage">•</span>{pro}</li>)}
+                                                {analysis.pros.map((pro, i) => <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-sage">•</span>{pro}</li>)}
                                             </ul>
                                         </div>
                                         <div>
                                             <h4 className="font-medium text-danger flex items-center mb-2"><XCircle className="w-4 h-4 mr-1"/> Potential Concerns</h4>
                                             <ul className="space-y-2">
-                                                {parsedAnalysis.cons.map((con: string, i: number) => <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-danger">•</span>{con}</li>)}
+                                                {analysis.cons.map((con, i) => <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-danger">•</span>{con}</li>)}
                                             </ul>
                                         </div>
                                     </div>
                                     <div className="space-y-4 pt-4 border-t border-sand">
                                         <div>
                                             <h4 className="font-medium text-ink mb-2">Why am I a good fit for this role?</h4>
-                                            <p className="text-sm text-ink whitespace-pre-wrap bg-cream p-4 rounded-lg">{parsedAnalysis.fitReason}</p>
+                                            <p className="text-sm text-ink whitespace-pre-wrap bg-cream p-4 rounded-lg">{analysis.fitReason}</p>
                                         </div>
                                         <div>
                                             <h4 className="font-medium text-ink mb-2">What edits to my resume should I make to stand out?</h4>
-                                            <p className="text-sm text-ink whitespace-pre-wrap bg-cream p-4 rounded-lg">{parsedAnalysis.resumeEdits}</p>
+                                            <p className="text-sm text-ink whitespace-pre-wrap bg-cream p-4 rounded-lg">{analysis.resumeEdits}</p>
                                         </div>
                                     </div>
                                 </div>

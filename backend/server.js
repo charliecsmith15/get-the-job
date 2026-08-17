@@ -388,9 +388,9 @@ app.put('/api/jobs/:id', requireDb, async (req, res) => {
   try {
     const j = req.body;
     await pool.query(
-      `UPDATE jobs SET title=$2, company=$3, status=$4, url=$5, description=$6, "matchScore"=$7, "matchAnalysis"=$8,
-       location=$9, tags=$10, "dateApplied"=$11, "customFields"=$12 WHERE id=$1`,
-      [req.params.id, j.title, j.company, j.status, j.url, j.description, j.matchScore || null, j.matchAnalysis,
+      `UPDATE jobs SET title=$2, company=$3, status=$4, url=$5, description=$6,
+       location=$7, tags=$8, "dateApplied"=$9, "customFields"=$10 WHERE id=$1`,
+      [req.params.id, j.title, j.company, j.status, j.url, j.description,
        j.location, JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {})]
     );
     res.status(204).end();
@@ -571,6 +571,34 @@ app.put('/api/interview-questions/:id', requireDb, async (req, res) => {
 app.delete('/api/interview-questions/:id', requireDb, async (req, res) => {
   try {
     await pool.query('DELETE FROM interview_questions WHERE id=$1', [req.params.id]);
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+
+// Job Analyses
+app.get('/api/job-analyses', requireDb, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM job_analyses ORDER BY "createdAt" DESC');
+    res.json(rows);
+  } catch (e) { dbError(res, e); }
+});
+app.put('/api/job-analyses/:jobId', requireDb, async (req, res) => {
+  try {
+    const a = req.body;
+    await pool.query(
+      `INSERT INTO job_analyses (id, "jobId", score, pros, cons, "fitReason", "resumeEdits", "createdAt")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       ON CONFLICT ("jobId") DO UPDATE SET
+         id=$1, score=$3, pros=$4, cons=$5, "fitReason"=$6, "resumeEdits"=$7, "createdAt"=$8`,
+      [a.id, req.params.jobId, a.score, JSON.stringify(a.pros ?? []), JSON.stringify(a.cons ?? []),
+       a.fitReason, a.resumeEdits, a.createdAt]
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+app.delete('/api/job-analyses/:jobId', requireDb, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM job_analyses WHERE "jobId"=$1', [req.params.jobId]);
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });

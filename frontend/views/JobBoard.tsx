@@ -9,7 +9,7 @@ const COLUMNS: JobStatus[] = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Reje
 const BLANK_JOB: Partial<Job> = { title: '', company: '', status: 'Saved', url: '', description: '', location: '', dateApplied: '' };
 
 export const JobBoard: React.FC = () => {
-    const { jobs, addJob, updateJob, navigate } = useAppStore();
+    const { jobs, jobAnalyses, addJob, updateJob, navigate } = useAppStore();
     const [isAdding, setIsAdding] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [newJob, setNewJob] = useState<Partial<Job>>(BLANK_JOB);
@@ -184,11 +184,7 @@ export const JobBoard: React.FC = () => {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2 mb-1">
                                             <h4 className="font-semibold text-ink leading-tight">{job.title}</h4>
-                                            {job.matchScore && (
-                                                <span className={`flex-shrink-0 text-xs font-bold px-1.5 py-0.5 rounded ${job.matchScore > 80 ? 'bg-sage text-paper' : job.matchScore > 50 ? 'bg-wood text-paper' : 'bg-danger text-paper'}`}>
-                                                    {job.matchScore}%
-                                                </span>
-                                            )}
+                                            {(() => { const s = jobAnalyses.find(a => a.jobId === job.id)?.score; return s != null ? <span className={`flex-shrink-0 text-xs font-bold px-1.5 py-0.5 rounded ${s > 80 ? 'bg-sage text-paper' : s > 50 ? 'bg-wood text-paper' : 'bg-danger text-paper'}`}>{s}%</span> : null; })()}
                                         </div>
                                         <p className="text-sm text-taupe">{job.company}</p>
                                         <div className="flex items-center gap-3 mt-2">
@@ -227,11 +223,7 @@ export const JobBoard: React.FC = () => {
                                         <div onClick={() => navigate('job-detail', job.id)}>
                                             <div className="flex justify-between items-start mb-2">
                                                 <h4 className="font-medium text-ink leading-tight">{job.title}</h4>
-                                                {job.matchScore && (
-                                                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${job.matchScore > 80 ? 'bg-sage text-paper' : job.matchScore > 50 ? 'bg-wood text-paper' : 'bg-danger text-paper'}`}>
-                                                        {job.matchScore}%
-                                                    </span>
-                                                )}
+                                                {(() => { const s = jobAnalyses.find(a => a.jobId === job.id)?.score; return s != null ? <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${s > 80 ? 'bg-sage text-paper' : s > 50 ? 'bg-wood text-paper' : 'bg-danger text-paper'}`}>{s}%</span> : null; })()}
                                             </div>
                                             <p className="text-sm text-taupe mb-2">{job.company}</p>
                                             {job.location && (

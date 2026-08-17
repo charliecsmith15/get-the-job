@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useMemo } from 'react';
-import { Job, Note, Resume, Preferences, ContextResource, ViewState, DbConfig, SyncStatus, JournalEntry, InterviewQuestion } from './types';
+import { Job, JobAnalysis, Note, Resume, Preferences, ContextResource, ViewState, DbConfig, SyncStatus, JournalEntry, InterviewQuestion } from './types';
 import { createApiClient } from './services/api';
 
 interface AppState {
@@ -10,6 +10,7 @@ interface AppState {
     contextResources: ContextResource[];
     journalEntries: JournalEntry[];
     interviewQuestions: InterviewQuestion[];
+    jobAnalyses: JobAnalysis[];
     currentView: ViewState;
     selectedJobId: string | null;
     dbConfig: DbConfig;
@@ -34,6 +35,8 @@ interface AppContextType extends AppState {
     addInterviewQuestion: (q: Omit<InterviewQuestion, 'id' | 'dateAdded'>) => void;
     updateInterviewQuestion: (id: string, updates: Partial<InterviewQuestion>) => void;
     deleteInterviewQuestion: (id: string) => void;
+    setJobAnalysis: (jobId: string, data: Pick<JobAnalysis, 'score' | 'pros' | 'cons' | 'fitReason' | 'resumeEdits'>) => void;
+    deleteJobAnalysis: (jobId: string) => void;
     navigate: (view: ViewState, jobId?: string) => void;
     importData: (data: any) => void;
     updateDbConfig: (config: DbConfig) => void;
@@ -94,6 +97,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [contextResources, setContextResources] = useState<ContextResource[]>(mockContextResources);
     const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
     const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>([]);
+    const [jobAnalyses, setJobAnalyses] = useState<JobAnalysis[]>([]);
     const [currentView, setCurrentView] = useState<ViewState>('dashboard');
     const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
     
@@ -132,7 +136,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 apiClient.getPreferences().catch(() => null),
                 apiClient.getJournalEntries().catch(() => []),
                 apiClient.getInterviewQuestions().catch(() => []),
-            ]).then(([j, n, r, c, p, je, iq]) => {
+                apiClient.getJobAnalyses().catch(() => []),
+            ]).then(([j, n, r, c, p, je, iq, ja]) => {
                 if (j.length) setJobs(j);
                 if (n.length) setNotes(n);
                 if (r.length) setResumes(r);
@@ -140,6 +145,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 if (p && Object.keys(p).length > 0) setPreferences(p);
                 if (je.length) setJournalEntries(je);
                 if (iq.length) setInterviewQuestions(iq);
+                if (ja.length) setJobAnalyses(ja);
                 setSyncStatus('idle');
             }).catch(err => {
                 console.error("Failed to fetch from SQL backend:", err);
@@ -386,6 +392,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
+    const setJobAnalysis = async (jobId: string, data: Pick<JobAnalysis, 'score' | 'pros' | 'cons' | 'fitReason' | 'resumeEdits'>) => {
+        const existing = jobAnalyses.find(a => a.jobId === jobId);
+        const analysis: JobAnalysis = {
+            id: existing?.id ?? generateId(),
+            jobId,
+            createdAt: existing?.createdAt ?? new Date().toISOString(),
+            ...data
+        };
+        setJobAnalyses(prev =>
+            prev.find(a => a.jobId === jobId)
+                ? prev.map(a => a.jobId === jobId ? analysis : a)
+                : [...prev, analysis]
+        );
+        if (dbConfig.enabled) {
+            try { await apiClient.upsertJobAnalysis(analysis); }
+            catch (e) { console.error(e); }
+        }
+    };
+
+    const deleteJobAnalysis = async (jobId: string) => {
+        setJobAnalyses(prev => prev.filter(a => a.jobId !== jobId));
+        if (dbConfig.enabled) {
+            try { await apiClient.deleteJobAnalysis(jobId); }
+            catch (e) { console.error(e); }
+        }
+    };
+
     const navigate = (view: ViewState, jobId?: string) => {
         setCurrentView(view);
         if (jobId !== undefined) {
@@ -418,13 +451,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return (
         <AppContext.Provider value={{
-            jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions,
+            jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses,
             currentView, selectedJobId, dbConfig, syncStatus,
             addJob, updateJob, deleteJob, addNote, deleteNote,
             addResume, updateResume, deleteResume, updatePreferences: updatePreferencesState,
             addContextResource, deleteContextResource,
             addJournalEntry, updateJournalEntry, deleteJournalEntry,
             addInterviewQuestion, updateInterviewQuestion, deleteInterviewQuestion,
+            setJobAnalysis, deleteJobAnalysis,
             navigate, importData, updateDbConfig
         }}>
             {children}

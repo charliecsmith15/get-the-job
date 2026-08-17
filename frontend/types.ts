@@ -8,12 +8,21 @@ export interface Job {
     url: string;
     description: string;
     dateAdded: string;
-    matchScore?: number;
-    matchAnalysis?: string;
     location?: string;
     tags?: string[];
     dateApplied?: string;
     customFields?: Record<string, string>;
+}
+
+export interface JobAnalysis {
+    id: string;
+    jobId: string;
+    score: number;
+    pros: string[];
+    cons: string[];
+    fitReason: string;
+    resumeEdits: string;
+    createdAt: string;
 }
 
 export interface Note {

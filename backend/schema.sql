@@ -67,3 +67,15 @@ CREATE TABLE IF NOT EXISTS interview_questions (
     category VARCHAR(100) DEFAULT 'General',
     "dateAdded" TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS job_analyses (
+    id VARCHAR(50) PRIMARY KEY,
+    "jobId" VARCHAR(50) NOT NULL UNIQUE REFERENCES jobs(id) ON DELETE CASCADE,
+    score INTEGER,
+    pros JSONB DEFAULT '[]',
+    cons JSONB DEFAULT '[]',
+    "fitReason" TEXT,
+    "resumeEdits" TEXT,
+    "createdAt" TIMESTAMPTZ DEFAULT NOW()
+);
+-- Migration: CREATE TABLE IF NOT EXISTS job_analyses (...) — run the block above on existing instances.

@@ -6,7 +6,7 @@ import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, ge
 import { Job } from '../types';
 
 export const JobDetail: React.FC = () => {
-    const { jobs, notes, resumes, preferences, contextResources, journalEntries, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume, setJobAnalysis } = useAppStore();
+    const { jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume, setJobAnalysis } = useAppStore();
     const [activeTab, setActiveTab] = useState<'details' | 'notes' | 'ai'>('details');
     
     // Edit State
@@ -81,7 +81,7 @@ export const JobDetail: React.FC = () => {
         if (!job.description) return alert("Please add a job description first.");
         setIsGeneratingQuestions(true);
         try {
-            const result = await generateInterviewQuestions(job.description, preferences, contextResources, journalEntries);
+            const result = await generateInterviewQuestions(job.description, preferences, interviewQuestions);
             setAiQuestions(result);
         } catch (error) {
             alert("Failed to generate questions.");

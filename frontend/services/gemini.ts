@@ -159,13 +159,27 @@ export const generateTailoredResume = async (jobDescription: string, baseResume:
    }
 }
 
-export const generateInterviewQuestions = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[], journalEntries: { date: string; content: string }[]) => {
+export const generateInterviewQuestions = async (
+    jobDescription: string,
+    preferences: Preferences,
+    savedQuestions: { question: string; response: string }[]
+) => {
+    const relevantQA = savedQuestions
+        .filter(q => q.response?.trim())
+        .map(q => `Q: ${q.question}\nA: ${q.response}`)
+        .join('\n\n');
+
     const prompt = `Generate 5 highly relevant interview questions for this role. Return only the questions — no answers, no tips, no explanations for why each question was chosen.
 
-    ${buildFoundationalContext(preferences, contextResources, journalEntries)}
+LINKEDIN PROFILE:
+${preferences.linkedInProfile || 'Not provided.'}
 
-    Job Description:
-    ${jobDescription}`;
+PRIMARY RESUME:
+${preferences.primaryResume || 'Not provided.'}
+${relevantQA ? `\nINTERVIEW PREP (existing Q&A that may be relevant):\n${relevantQA}` : ''}
+
+Job Description:
+${jobDescription}`;
 
     try {
         const response = await ai.models.generateContent({

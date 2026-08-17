@@ -407,15 +407,9 @@ export const JobDetail: React.FC = () => {
                                     {isAnalyzing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Analyzing...</> : 'Analyze Match'}
                                 </Button>
                             </div>
-                            
+
                             {parsedAnalysis ? (
                                 <div className="space-y-6">
-                                    <div className="flex items-center space-x-4 bg-cream p-4 rounded-lg">
-                                        <div className={`text-4xl font-bold ${parsedAnalysis.score > 80 ? 'text-sage' : parsedAnalysis.score > 50 ? 'text-wood' : 'text-danger'}`}>
-                                            {parsedAnalysis.score}%
-                                        </div>
-                                        <p className="text-ink">{parsedAnalysis.summary}</p>
-                                    </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <h4 className="font-medium text-sage flex items-center mb-2"><CheckCircle2 className="w-4 h-4 mr-1"/> Pros</h4>
@@ -428,6 +422,16 @@ export const JobDetail: React.FC = () => {
                                             <ul className="space-y-2">
                                                 {parsedAnalysis.cons.map((con: string, i: number) => <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-danger">•</span>{con}</li>)}
                                             </ul>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 pt-4 border-t border-sand">
+                                        <div>
+                                            <h4 className="font-medium text-ink mb-2">Why am I a good fit for this role?</h4>
+                                            <p className="text-sm text-ink whitespace-pre-wrap bg-cream p-4 rounded-lg">{parsedAnalysis.fitReason}</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-medium text-ink mb-2">What edits to my resume should I make to stand out?</h4>
+                                            <p className="text-sm text-ink whitespace-pre-wrap bg-cream p-4 rounded-lg">{parsedAnalysis.resumeEdits}</p>
                                         </div>
                                     </div>
                                 </div>

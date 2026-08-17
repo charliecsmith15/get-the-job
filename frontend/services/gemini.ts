@@ -61,22 +61,26 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
                             type: Type.NUMBER,
                             description: "A match score from 0 to 100 based on how well the job fits the preferences and context."
                         },
-                        summary: {
-                            type: Type.STRING,
-                            description: "A short, 2-sentence summary of why this is or isn't a good fit."
-                        },
                         pros: {
                             type: Type.ARRAY,
                             items: { type: Type.STRING },
-                            description: "List of 3-5 reasons this job is a good match."
+                            description: "List of 3-5 reasons this job is a good match based on the user's background and career profile."
                         },
                         cons: {
                             type: Type.ARRAY,
                             items: { type: Type.STRING },
-                            description: "List of 1-3 potential red flags or mismatches based on dealbreakers and context."
+                            description: "List of 1-3 potential red flags or mismatches based on the user's career profile and dealbreakers."
+                        },
+                        fitReason: {
+                            type: Type.STRING,
+                            description: "A substantive paragraph answering: why is this person a good fit for this specific role? Reference their background, skills, and career profile directly."
+                        },
+                        resumeEdits: {
+                            type: Type.STRING,
+                            description: "Specific, actionable edits the user should make to their resume to stand out for this role. Reference actual content from their resume and the job description."
                         }
                     },
-                    required: ["score", "summary", "pros", "cons"]
+                    required: ["score", "pros", "cons", "fitReason", "resumeEdits"]
                 }
             }
         });

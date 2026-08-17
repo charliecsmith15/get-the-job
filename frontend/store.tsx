@@ -174,11 +174,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const updateJob = async (id: string, updates: Partial<Job>) => {
         setJobs(prev => prev.map(job => job.id === id ? { ...job, ...updates } : job));
-        
+
         if (dbConfig.enabled) {
             setSyncStatus('syncing');
             try {
-                await apiClient.updateJob(id, updates);
+                // Send the full merged job so partial updates don't null out other columns
+                const currentJob = jobs.find(j => j.id === id);
+                const fullJob = currentJob ? { ...currentJob, ...updates } : updates;
+                await apiClient.updateJob(id, fullJob);
                 setSyncStatus('idle');
             } catch (e) {
                 console.error(e);

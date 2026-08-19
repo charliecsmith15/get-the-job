@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Save Job</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="loading" class="state">Loading…</div>
+
+    <div id="denied" class="state hidden">
+      <h1>Not authorized</h1>
+      <p>Your Chrome account isn't on the allowed list for Get the Job.</p>
+      <button id="denied-settings" class="secondary">Open settings</button>
+    </div>
+
+    <div id="unconfigured" class="state hidden">
+      <h1>Set up required</h1>
+      <p>Add your Get the Job backend URL before saving jobs.</p>
+      <button id="unconfigured-settings">Open settings</button>
+    </div>
+
+    <div id="form" class="state hidden">
+      <header>
+        <h1>Save this job</h1>
+        <span id="signed-in-as"></span>
+      </header>
+
+      <label for="title">Job title *</label>
+      <input type="text" id="title" required />
+
+      <label for="company">Company *</label>
+      <input type="text" id="company" required />
+
+      <div class="row">
+        <div>
+          <label for="status">Status</label>
+          <select id="status">
+            <option>Saved</option>
+            <option>Applied</option>
+            <option>Interviewing</option>
+            <option>Offer</option>
+            <option>Rejected</option>
+          </select>
+        </div>
+        <div id="dateApplied-wrap" class="hidden">
+          <label for="dateApplied">Date applied</label>
+          <input type="date" id="dateApplied" />
+        </div>
+      </div>
+
+      <label for="location">Location</label>
+      <input type="text" id="location" placeholder="e.g. Remote, San Diego CA" />
+
+      <label for="tags">Tags (comma-separated)</label>
+      <input type="text" id="tags" placeholder="e.g. remote, senior, backend" />
+
+      <label for="url">Job posting URL</label>
+      <input type="text" id="url" />
+
+      <label for="description">Notes / description</label>
+      <textarea id="description" rows="4"></textarea>
+
+      <button id="submit">Save to Get the Job</button>
+      <p id="form-status"></p>
+    </div>
+  </div>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

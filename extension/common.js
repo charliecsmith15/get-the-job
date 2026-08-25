@@ -41,6 +41,13 @@ function randomId() {
 // Builds a Job payload matching the shape backend/schema.sql's `jobs` table
 // and POST /api/jobs expect (see frontend/types.ts `Job`).
 export function buildJobPayload(fields) {
+  let utmSource;
+  try {
+    utmSource = new URL(fields.url).searchParams.get('utm_source') || undefined;
+  } catch {
+    utmSource = undefined;
+  }
+
   return {
     id: randomId(),
     title: fields.title,
@@ -53,6 +60,7 @@ export function buildJobPayload(fields) {
     tags: fields.tags,
     dateApplied: fields.status === 'Applied' && fields.dateApplied ? fields.dateApplied : undefined,
     customFields: {},
+    source: utmSource,
   };
 }
 

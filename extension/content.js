@@ -16,11 +16,21 @@ function extractJobTitle() {
     } catch {}
   }
 
-  // 2. First <h1> on the page
-  const h1 = document.querySelector('h1');
-  if (h1) {
-    const text = h1.textContent.replace(/\s+/g, ' ').trim();
-    if (text) return text;
+  // 2. <h1> inside semantic content containers first, then bare first <h1>
+  const h1Candidates = [
+    'main h1',
+    '[role="main"] h1',
+    'article h1',
+    '#content h1',
+    '.content h1',
+    'h1',
+  ];
+  for (const sel of h1Candidates) {
+    const el = document.querySelector(sel);
+    if (el) {
+      const text = el.textContent.replace(/\s+/g, ' ').trim();
+      if (text) return text;
+    }
   }
 
   // 3. Page <title> with common suffixes stripped

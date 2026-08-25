@@ -1,3 +1,36 @@
+function extractJobTitle() {
+  // 1. JSON-LD JobPosting schema (LinkedIn, Indeed, Greenhouse, Lever, Ashby, Workday…)
+  for (const script of document.querySelectorAll('script[type="application/ld+json"]')) {
+    try {
+      const json = JSON.parse(script.textContent);
+      const find = (d) => {
+        if (!d) return null;
+        if (Array.isArray(d)) return d.map(find).find(Boolean) || null;
+        if (d['@type'] === 'JobPosting') return d;
+        if (d['@graph']) return find(d['@graph']);
+        return null;
+      };
+      const posting = find(json);
+      const title = posting && (posting.title || posting.name);
+      if (title) return title.trim();
+    } catch {}
+  }
+
+  // 2. First <h1> on the page
+  const h1 = document.querySelector('h1');
+  if (h1) {
+    const text = h1.textContent.replace(/\s+/g, ' ').trim();
+    if (text) return text;
+  }
+
+  // 3. Page <title> with common suffixes stripped
+  return document.title
+    .replace(/\s*[|–—]\s*.+$/, '')   // " | Company" or " — Company"
+    .replace(/\s+-\s+.+$/, '')        // " - Company"
+    .replace(/\s+at\s+.+$/i, '')      // " at Company"
+    .trim();
+}
+
 let panel = null;
 
 function removePanel() {
@@ -19,7 +52,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     return;
   }
 
-  const params = new URLSearchParams({ url: location.href, title: document.title });
+  const params = new URLSearchParams({ url: location.href, title: extractJobTitle() });
   panel = document.createElement('iframe');
   panel.src = `${chrome.runtime.getURL('popup.html')}?${params}`;
   panel.setAttribute('allowtransparency', 'true');

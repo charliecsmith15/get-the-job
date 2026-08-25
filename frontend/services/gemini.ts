@@ -96,7 +96,7 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
 
 export const tailorResumeSuggestion = async (jobDescription: string, baseResume: Resume, preferences: Preferences, contextResources: ContextResource[], journalEntries: { date: string; content: string }[]) => {
     const prompt = `
-    I am applying for a job. Review my resume and the job description, and suggest specific improvements to increase my chances. Ground your advice in my career profile and foundational context.
+    Review my resume against this job description and tell me exactly what to change to improve my chances. Be direct and specific — cite the job requirements and my resume content by name.
 
     ${buildFoundationalContext(preferences, contextResources, journalEntries)}
 
@@ -112,7 +112,7 @@ export const tailorResumeSuggestion = async (jobDescription: string, baseResume:
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
-                systemInstruction: "You are an expert career coach and resume writer. Provide actionable, specific advice grounded in the user's foundational career context and Petals Exercise.",
+                systemInstruction: "You are an expert resume coach. Give direct, prioritized advice on what to change in this resume for this specific role. Use short sections with bullet points. Lead with the highest-impact edits. Do not give generic advice.",
             }
         });
         return response.text;

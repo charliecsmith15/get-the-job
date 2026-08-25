@@ -7,10 +7,10 @@ import { analyzeJobMatch } from '../services/gemini';
 
 const COLUMNS: JobStatus[] = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
 
-const BLANK_JOB: Partial<Job> = { title: '', company: '', status: 'Saved', url: '', description: '', location: '', dateApplied: '' };
+const BLANK_JOB: Partial<Job> = { title: '', company: '', status: 'Saved', url: '', description: '', location: '', dateApplied: '', source: '' };
 
 export const JobBoard: React.FC = () => {
-    const { jobs, jobAnalyses, addJob, updateJob, navigate, preferences, contextResources, journalEntries, setJobAnalysis } = useAppStore();
+    const { jobs, jobAnalyses, addJob, updateJob, navigate, preferences, contextResources, journalEntries, setJobAnalysis, jobSources } = useAppStore();
     const [isAdding, setIsAdding] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [newJob, setNewJob] = useState<Partial<Job>>(BLANK_JOB);
@@ -106,6 +106,15 @@ export const JobBoard: React.FC = () => {
                             <Input label="Job URL *" required type="url" placeholder="https://..." value={newJob.url} onChange={e => setNewJob({ ...newJob, url: e.target.value })} />
                             <Input label="Job Title" placeholder="e.g. Senior Product Manager" value={newJob.title} onChange={e => setNewJob({ ...newJob, title: e.target.value })} />
                             <Input label="Location" placeholder="e.g. New York, NY or Remote" value={newJob.location} onChange={e => setNewJob({ ...newJob, location: e.target.value })} />
+                            {jobSources.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-ink mb-1">Source</label>
+                                    <select className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm" value={newJob.source ?? ''} onChange={e => setNewJob({ ...newJob, source: e.target.value })}>
+                                        <option value="">— none —</option>
+                                        {jobSources.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
+                                    </select>
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-medium text-ink mb-1">Status</label>
                                 <select className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm" value={newJob.status} onChange={e => setNewJob({ ...newJob, status: e.target.value as JobStatus })}>
@@ -155,6 +164,15 @@ export const JobBoard: React.FC = () => {
                                 <label className="block text-sm font-medium text-ink mb-1">Date Applied</label>
                                 <input type="date" className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm" value={newJob.dateApplied ?? ''} onChange={e => setNewJob({ ...newJob, dateApplied: e.target.value })} />
                             </div>
+                            {jobSources.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-ink mb-1">Source</label>
+                                    <select className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm" value={newJob.source ?? ''} onChange={e => setNewJob({ ...newJob, source: e.target.value })}>
+                                        <option value="">— none —</option>
+                                        {jobSources.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
+                                    </select>
+                                </div>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-ink mb-1">Tags</label>

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
-import { Card, Button, Badge, Textarea, Input, renderBold } from '../components/UI';
+import { Card, Button, Badge, Textarea, Input, renderBold, renderMarkdown } from '../components/UI';
 import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X } from 'lucide-react';
 import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, generateTailoredResume } from '../services/gemini';
 import { Job } from '../types';
 
 export const JobDetail: React.FC = () => {
-    const { jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume, setJobAnalysis } = useAppStore();
+    const { jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume, setJobAnalysis, jobSources } = useAppStore();
     const [activeTab, setActiveTab] = useState<'details' | 'notes' | 'ai'>('details');
     
     // Edit State
@@ -229,6 +229,15 @@ export const JobDetail: React.FC = () => {
                                     <Input label="Date Applied" type="date" value={editForm.dateApplied || ''} onChange={e => setEditForm({...editForm, dateApplied: e.target.value})} />
                                     <Input label="Job URL" type="url" value={editForm.url || ''} onChange={e => setEditForm({...editForm, url: e.target.value})} />
                                     <Input label="Tags (comma separated)" value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder="e.g., React, Remote, Startup" />
+                                    {jobSources.length > 0 && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-ink mb-1">Source</label>
+                                            <select className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm" value={editForm.source ?? ''} onChange={e => setEditForm({...editForm, source: e.target.value})}>
+                                                <option value="">— none —</option>
+                                                {jobSources.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
+                                            </select>
+                                        </div>
+                                    )}
                                 </div>
                                 
                                 <div className="space-y-3 border-t border-sand pt-4">
@@ -288,6 +297,13 @@ export const JobDetail: React.FC = () => {
                                             <div>
                                                 <h3 className="text-xs font-medium text-taupe uppercase tracking-wider mb-1">Date Applied</h3>
                                                 <p className="text-ink text-sm flex items-center"><Calendar className="w-4 h-4 mr-1 text-taupe"/> {new Date(job.dateApplied).toLocaleDateString()}</p>
+                                            </div>
+                                        )}
+
+                                        {job.source && (
+                                            <div>
+                                                <h3 className="text-xs font-medium text-taupe uppercase tracking-wider mb-1">Source</h3>
+                                                <p className="text-ink text-sm">{job.source}</p>
                                             </div>
                                         )}
 
@@ -464,9 +480,11 @@ export const JobDetail: React.FC = () => {
                                     </Button>
                                 </div>
                                 {aiQuestions ? (
-                                    <div className="prose prose-sm max-w-none text-ink whitespace-pre-wrap">
-                                        {renderBold(aiQuestions)}
-                                    </div>
+                                    <ul className="space-y-3">
+                                        {aiQuestions.split('\n').filter(l => l.trim()).map((line, i) => (
+                                            <li key={i} className="text-sm text-ink">{renderBold(line)}</li>
+                                        ))}
+                                    </ul>
                                 ) : (
                                     <p className="text-taupe text-sm">Generate potential interview questions based on the job description.</p>
                                 )}
@@ -497,8 +515,8 @@ export const JobDetail: React.FC = () => {
                                     </div>
                                     
                                     {aiTailorAdvice && (
-                                        <div className="mt-4 p-4 bg-cream rounded-lg border border-sand prose prose-sm max-w-none text-ink whitespace-pre-wrap max-h-64 overflow-y-auto crm-scrollbar">
-                                            {renderBold(aiTailorAdvice)}
+                                        <div className="mt-4 p-4 bg-cream rounded-lg border border-sand max-h-64 overflow-y-auto crm-scrollbar">
+                                            {renderMarkdown(aiTailorAdvice)}
                                         </div>
                                     )}
 

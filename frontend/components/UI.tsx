@@ -1,11 +1,62 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
-// Renders **bold** markdown as <strong> inline. Preserves line breaks via whitespace-pre-wrap on the parent.
 export const renderBold = (text: string | null | undefined): React.ReactNode => {
     if (!text) return text ?? null;
     const parts = text.split(/\*\*(.*?)\*\*/gs);
     return parts.map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part);
+};
+
+// Renders a markdown string into React nodes, handling headers, lists, bold, and paragraphs.
+export const renderMarkdown = (text: string | null | undefined): React.ReactNode => {
+    if (!text) return null;
+
+    const inline = (line: string, key: number): React.ReactNode => {
+        const parts = line.split(/\*\*(.*?)\*\*/g);
+        return <React.Fragment key={key}>{parts.map((p, i) => i % 2 === 1 ? <strong key={i}>{p}</strong> : p)}</React.Fragment>;
+    };
+
+    const elements: React.ReactNode[] = [];
+    let listItems: React.ReactNode[] = [];
+    let listType: 'ul' | 'ol' = 'ul';
+    let k = 0;
+
+    const flushList = () => {
+        if (!listItems.length) return;
+        const Tag = listType;
+        const cls = listType === 'ul' ? 'list-disc pl-5 space-y-1' : 'list-decimal pl-5 space-y-1';
+        elements.push(<Tag key={k++} className={cls}>{listItems}</Tag>);
+        listItems = [];
+    };
+
+    for (const raw of text.split('\n')) {
+        const line = raw.trimEnd();
+        if (/^### /.test(line)) {
+            flushList();
+            elements.push(<p key={k++} className="text-xs font-bold uppercase tracking-wide text-taupe mt-3 mb-0.5">{line.slice(4)}</p>);
+        } else if (/^## /.test(line)) {
+            flushList();
+            elements.push(<p key={k++} className="text-sm font-semibold text-ink mt-3 mb-0.5">{line.slice(3)}</p>);
+        } else if (/^# /.test(line)) {
+            flushList();
+            elements.push(<p key={k++} className="text-sm font-bold text-ink mt-3 mb-0.5">{line.slice(2)}</p>);
+        } else if (/^[-*] /.test(line)) {
+            if (listType !== 'ul' && listItems.length) flushList();
+            listType = 'ul';
+            listItems.push(<li key={k++} className="text-sm text-ink">{inline(line.slice(2), k++)}</li>);
+        } else if (/^\d+\. /.test(line)) {
+            if (listType !== 'ol' && listItems.length) flushList();
+            listType = 'ol';
+            listItems.push(<li key={k++} className="text-sm text-ink">{inline(line.replace(/^\d+\. /, ''), k++)}</li>);
+        } else if (line.trim() === '') {
+            flushList();
+        } else {
+            flushList();
+            elements.push(<p key={k++} className="text-sm text-ink">{inline(line, k++)}</p>);
+        }
+    }
+    flushList();
+    return <div className="space-y-1">{elements}</div>;
 };
 
 export const Card: React.FC<React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode; className?: string }> = ({ children, className = '', ...props }) => (

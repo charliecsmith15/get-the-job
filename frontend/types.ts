@@ -9,6 +9,7 @@ export interface Job {
     description: string;
     dateAdded: string;
     location?: string;
+    source?: string;
     tags?: string[];
     dateApplied?: string;
     customFields?: Record<string, string>;

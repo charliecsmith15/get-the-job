@@ -377,10 +377,10 @@ app.post('/api/jobs', requireDb, async (req, res) => {
   try {
     const j = req.body;
     await pool.query(
-      `INSERT INTO jobs (id, title, company, status, url, description, "dateAdded", "matchScore", "matchAnalysis", location, tags, "dateApplied", "customFields")
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT (id) DO NOTHING`,
+      `INSERT INTO jobs (id, title, company, status, url, description, "dateAdded", "matchScore", "matchAnalysis", location, tags, "dateApplied", "customFields", source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) ON CONFLICT (id) DO NOTHING`,
       [j.id, j.title, j.company, j.status, j.url, j.description, j.dateAdded, j.matchScore || null, j.matchAnalysis, j.location,
-       JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {})]
+       JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {}), j.source || null]
     );
     res.status(201).json(j);
   } catch (e) { dbError(res, e); }
@@ -398,12 +398,14 @@ app.put('/api/jobs/:id', requireDb, async (req, res) => {
          location     = COALESCE($7, location),
          tags         = $8,
          "dateApplied"   = $9,
-         "customFields"  = $10
+         "customFields"  = $10,
+         source          = $11
        WHERE id=$1`,
       [req.params.id,
        j.title   || null, j.company || null, j.status || null,
        j.url     || null, j.description || null, j.location || null,
-       JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {})]
+       JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {}),
+       j.source || null]
     );
     res.status(204).end();
   } catch (e) { dbError(res, e); }

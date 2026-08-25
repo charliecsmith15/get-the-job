@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     location VARCHAR(255),
     tags JSONB DEFAULT '[]',
     "dateApplied" DATE,
-    "customFields" JSONB DEFAULT '{}'
+    "customFields" JSONB DEFAULT '{}',
+    source VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS notes (
@@ -52,6 +53,7 @@ CREATE TABLE IF NOT EXISTS preferences (
 -- Migrations:
 -- ALTER TABLE preferences ADD COLUMN IF NOT EXISTS "linkedInProfile" TEXT;
 -- ALTER TABLE preferences ADD COLUMN IF NOT EXISTS "primaryResume" TEXT;
+-- ALTER TABLE jobs ADD COLUMN IF NOT EXISTS source VARCHAR(255);
 
 CREATE TABLE IF NOT EXISTS journal_entries (
     id VARCHAR(50) PRIMARY KEY,

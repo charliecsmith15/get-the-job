@@ -56,7 +56,6 @@ async function init() {
 
     if (tab) {
       document.getElementById('url').value = tab.url || '';
-      document.getElementById('title').value = tab.title || '';
       try {
         const utmSource = new URL(tab.url).searchParams.get('utm_source');
         if (utmSource) document.getElementById('source').value = normalizeSource(utmSource);

@@ -57,6 +57,10 @@ async function init() {
     if (tab) {
       document.getElementById('url').value = tab.url || '';
       document.getElementById('title').value = tab.title || '';
+      try {
+        const utmSource = new URL(tab.url).searchParams.get('utm_source');
+        if (utmSource) document.getElementById('source').value = utmSource;
+      } catch {}
     }
 
     showState('form');
@@ -94,6 +98,7 @@ async function init() {
       status: statusSelect.value,
       url: document.getElementById('url').value.trim(),
       description: document.getElementById('description').value.trim(),
+      source: document.getElementById('source').value.trim() || undefined,
       location: document.getElementById('location').value.trim(),
       dateApplied: document.getElementById('dateApplied').value,
       tags: document.getElementById('tags').value

@@ -75,15 +75,17 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   let cleanUrl = location.href;
+  let utmSource = '';
   try {
     const u = new URL(location.href);
+    utmSource = u.searchParams.get('utm_source') || '';
     for (const key of [...u.searchParams.keys()]) {
       if (key.startsWith('utm_')) u.searchParams.delete(key);
     }
     cleanUrl = u.toString();
   } catch {}
 
-  const params = new URLSearchParams({ url: cleanUrl, title: extractJobTitle() });
+  const params = new URLSearchParams({ url: cleanUrl, utmSource });
   panel = document.createElement('iframe');
   panel.src = `${chrome.runtime.getURL('popup.html')}?${params}`;
   panel.setAttribute('allowtransparency', 'true');

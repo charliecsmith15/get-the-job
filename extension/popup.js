@@ -23,7 +23,7 @@ function closePanel() {
 async function getActiveTab() {
   const params = new URLSearchParams(location.search);
   const url = params.get('url');
-  return url ? { url, title: params.get('title') || '' } : null;
+  return url ? { url, utmSource: params.get('utmSource') || '' } : null;
 }
 
 document.getElementById('close').addEventListener('click', closePanel);
@@ -56,10 +56,7 @@ async function init() {
 
     if (tab) {
       document.getElementById('url').value = tab.url || '';
-      try {
-        const utmSource = new URL(tab.url).searchParams.get('utm_source');
-        if (utmSource) document.getElementById('source').value = normalizeSource(utmSource);
-      } catch {}
+      if (tab.utmSource) document.getElementById('source').value = normalizeSource(tab.utmSource);
     }
 
     showState('form');

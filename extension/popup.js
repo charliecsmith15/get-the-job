@@ -17,9 +17,11 @@ statusSelect.addEventListener('change', () => {
 });
 
 async function getActiveTab() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab;
+  const { gtj_source_tab: tab } = await chrome.storage.local.get('gtj_source_tab');
+  return tab || null;
 }
+
+document.getElementById('close').addEventListener('click', () => window.close());
 
 const EMAIL_CACHE_KEY = 'gtj_email_cache';
 const EMAIL_CACHE_TTL = 5 * 60 * 1000; // 5 minutes

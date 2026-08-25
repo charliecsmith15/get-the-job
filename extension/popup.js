@@ -30,7 +30,11 @@ async function getSignedInEmail() {
 }
 
 async function init() {
-  const settings = await getSettings();
+  const [settings, email, tab] = await Promise.all([
+    getSettings(),
+    getSignedInEmail(),
+    getActiveTab(),
+  ]);
 
   if (!settings.backendUrl) {
     showState('unconfigured');
@@ -44,7 +48,6 @@ async function init() {
     return;
   }
 
-  const email = await getSignedInEmail();
   if (!email || !settings.allowedEmails.includes(email)) {
     showState('denied');
     return;
@@ -52,7 +55,6 @@ async function init() {
 
   document.getElementById('signed-in-as').textContent = `Signed in as ${email}`;
 
-  const tab = await getActiveTab();
   if (tab) {
     document.getElementById('url').value = tab.url || '';
     document.getElementById('title').value = tab.title || '';

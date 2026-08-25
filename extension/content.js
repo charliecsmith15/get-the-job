@@ -16,16 +16,8 @@ function extractJobTitle() {
     } catch {}
   }
 
-  // 2. <h1> inside semantic content containers first, then bare first <h1>
-  const h1Candidates = [
-    'main h1',
-    '[role="main"] h1',
-    'article h1',
-    '#content h1',
-    '.content h1',
-    'h1',
-  ];
-  for (const sel of h1Candidates) {
+  // 2. <h1> inside semantic content containers
+  for (const sel of ['main h1', '[role="main"] h1', 'article h1', '#content h1', '.content h1']) {
     const el = document.querySelector(sel);
     if (el) {
       const text = el.textContent.replace(/\s+/g, ' ').trim();
@@ -33,7 +25,15 @@ function extractJobTitle() {
     }
   }
 
-  // 3. Page <title> with common suffixes stripped
+  // 3. First <h1> that doesn't contain an anchor tag — nav/brand h1s almost
+  //    always wrap a logo link; job title h1s are plain text.
+  const plainH1 = [...document.querySelectorAll('h1')].find(el => !el.querySelector('a'));
+  if (plainH1) {
+    const text = plainH1.textContent.replace(/\s+/g, ' ').trim();
+    if (text) return text;
+  }
+
+  // 4. Page <title> with common suffixes stripped
   return document.title
     .replace(/\s*[|–—]\s*.+$/, '')   // " | Company" or " — Company"
     .replace(/\s+-\s+.+$/, '')        // " - Company"

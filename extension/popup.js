@@ -21,10 +21,18 @@ async function getActiveTab() {
   return tab;
 }
 
+const EMAIL_CACHE_KEY = 'gtj_email_cache';
+const EMAIL_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 async function getSignedInEmail() {
+  const { [EMAIL_CACHE_KEY]: cached } = await chrome.storage.local.get(EMAIL_CACHE_KEY);
+  if (cached && Date.now() - cached.ts < EMAIL_CACHE_TTL) return cached.email;
+
   return new Promise((resolve) => {
-    chrome.identity.getProfileUserInfo({ accountStatus: 'ANY' }, (info) => {
-      resolve(info && info.email ? info.email.toLowerCase() : '');
+    chrome.identity.getProfileUserInfo({ accountStatus: 'ANY' }, async (info) => {
+      const email = info && info.email ? info.email.toLowerCase() : '';
+      await chrome.storage.local.set({ [EMAIL_CACHE_KEY]: { email, ts: Date.now() } });
+      resolve(email);
     });
   });
 }

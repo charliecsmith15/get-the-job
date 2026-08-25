@@ -52,7 +52,16 @@ chrome.runtime.onMessage.addListener((msg) => {
     return;
   }
 
-  const params = new URLSearchParams({ url: location.href, title: extractJobTitle() });
+  let cleanUrl = location.href;
+  try {
+    const u = new URL(location.href);
+    for (const key of [...u.searchParams.keys()]) {
+      if (key.startsWith('utm_')) u.searchParams.delete(key);
+    }
+    cleanUrl = u.toString();
+  } catch {}
+
+  const params = new URLSearchParams({ url: cleanUrl, title: extractJobTitle() });
   panel = document.createElement('iframe');
   panel.src = `${chrome.runtime.getURL('popup.html')}?${params}`;
   panel.setAttribute('allowtransparency', 'true');

@@ -25,14 +25,22 @@ function extractJobTitle() {
     }
   }
 
-  // 3. Among plain h1s (no anchor tag), prefer one whose parent container
-  //    also mentions location or job type — job title blocks almost always
-  //    have "Remote", "Full-time", etc. nearby; marketing slogans don't.
+  // 3. Among plain h1s (no anchor tag), try three passes in order:
+  //    a) parent container mentions job type/location
+  //    b) h1 text contains a common job title word
+  //    c) deepest-nested h1 — job detail panels are more deeply nested
+  //       than hero/marketing sections in React SPAs
   const plainH1s = [...document.querySelectorAll('h1')].filter(el => !el.querySelector('a'));
-  const jobTypePattern = /remote|hybrid|on.?site|full.?time|part.?time|contract|salary|\$\d/i;
-  const jobH1 = plainH1s.find(el => jobTypePattern.test(el.parentElement?.textContent || ''))
-    ?? plainH1s[0];
-  if (jobH1) {
+  if (plainH1s.length > 0) {
+    const domDepth = el => { let d = 0, n = el; while (n.parentElement) { d++; n = n.parentElement; } return d; };
+    const jobTypeRe = /remote|hybrid|on.?site|full.?time|part.?time|contract|salary|\$\d/i;
+    const titleWordRe = /\b(engineer|manager|director|designer|analyst|developer|lead|senior|junior|specialist|coordinator|architect|scientist|consultant|executive|representative|researcher|advisor|intern|officer|associate|head|vp)\b/i;
+
+    const jobH1 =
+      plainH1s.find(el => jobTypeRe.test(el.parentElement?.textContent || '')) ??
+      plainH1s.find(el => titleWordRe.test(el.textContent)) ??
+      plainH1s.reduce((best, el) => domDepth(el) > domDepth(best) ? el : best);
+
     const text = jobH1.textContent.replace(/\s+/g, ' ').trim();
     if (text) return text;
   }

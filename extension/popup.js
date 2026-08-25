@@ -1,4 +1,4 @@
-import { getSettings, buildJobPayload, createJob, originPatternFor } from './common.js';
+import { getSettings, buildJobPayload, createJob, originPatternFor, normalizeSource } from './common.js';
 
 const states = ['loading', 'denied', 'unconfigured', 'form'];
 function showState(name) {
@@ -59,7 +59,7 @@ async function init() {
       document.getElementById('title').value = tab.title || '';
       try {
         const utmSource = new URL(tab.url).searchParams.get('utm_source');
-        if (utmSource) document.getElementById('source').value = utmSource;
+        if (utmSource) document.getElementById('source').value = normalizeSource(utmSource);
       } catch {}
     }
 
@@ -98,7 +98,7 @@ async function init() {
       status: statusSelect.value,
       url: document.getElementById('url').value.trim(),
       description: document.getElementById('description').value.trim(),
-      source: document.getElementById('source').value.trim() || undefined,
+      source: normalizeSource(document.getElementById('source').value) || undefined,
       location: document.getElementById('location').value.trim(),
       dateApplied: document.getElementById('dateApplied').value,
       tags: document.getElementById('tags').value

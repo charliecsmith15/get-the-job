@@ -11,6 +11,26 @@ export const STORAGE_KEYS = {
 
 export const JOB_STATUSES = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
 
+const SOURCE_ALIASES = [
+  [/linkedin/i,   'LinkedIn'],
+  [/indeed/i,     'Indeed'],
+  [/glassdoor/i,  'Glassdoor'],
+  [/handshake/i,  'Handshake'],
+  [/ziprecruiter/i, 'ZipRecruiter'],
+  [/builtin/i,    'Built In'],
+  [/lever/i,      'Lever'],
+  [/greenhouse/i, 'Greenhouse'],
+  [/workday/i,    'Workday'],
+  [/ashby/i,      'Ashby'],
+];
+
+export function normalizeSource(raw) {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+  const match = SOURCE_ALIASES.find(([pattern]) => pattern.test(trimmed));
+  return match ? match[1] : trimmed;
+}
+
 export async function getSettings() {
   const stored = await chrome.storage.sync.get({
     [STORAGE_KEYS.backendUrl]: '',

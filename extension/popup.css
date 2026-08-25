@@ -1,12 +1,26 @@
 body {
   margin: 0;
-  width: 320px;
+  width: 100%;
+  height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: #f5f0e6;
   color: #24342a;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-#app { padding: 16px; }
+html {
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#app {
+  height: 100%;
+  overflow-y: auto;
+}
+
+#app { padding: 16px; height: 100%; box-sizing: border-box; overflow-y: auto; }
 
 .state.hidden { display: none; }
 

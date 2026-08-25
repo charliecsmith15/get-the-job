@@ -19,6 +19,15 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
+  "content_scripts": [{
+    "matches": ["https://*/*", "http://localhost/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+  "web_accessible_resources": [{
+    "resources": ["popup.html", "popup.js", "popup.css", "common.js", "icons/*"],
+    "matches": ["https://*/*", "http://localhost/*"]
+  }],
   "options_page": "options.html",
   "permissions": ["storage", "activeTab", "identity.email"],
   "optional_host_permissions": ["https://*/*", "http://localhost/*"]

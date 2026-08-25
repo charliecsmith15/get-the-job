@@ -16,12 +16,17 @@ statusSelect.addEventListener('change', () => {
   dateAppliedWrap.classList.toggle('hidden', statusSelect.value !== 'Applied');
 });
 
-async function getActiveTab() {
-  const { gtj_source_tab: tab } = await chrome.storage.local.get('gtj_source_tab');
-  return tab || null;
+function closePanel() {
+  window.parent.postMessage('gtj-close', '*');
 }
 
-document.getElementById('close').addEventListener('click', () => window.close());
+async function getActiveTab() {
+  const params = new URLSearchParams(location.search);
+  const url = params.get('url');
+  return url ? { url, title: params.get('title') || '' } : null;
+}
+
+document.getElementById('close').addEventListener('click', closePanel);
 
 const EMAIL_CACHE_KEY = 'gtj_email_cache';
 const EMAIL_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -104,7 +109,7 @@ async function init() {
       await createJob(settings.backendUrl, job);
       statusEl.textContent = 'Saved to Get the Job!';
       statusEl.className = 'ok';
-      setTimeout(() => window.close(), 900);
+      setTimeout(closePanel, 900);
     } catch (e) {
       statusEl.textContent = e.message || 'Failed to save job.';
       statusEl.className = 'err';

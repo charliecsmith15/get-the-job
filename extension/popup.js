@@ -38,37 +38,36 @@ async function getSignedInEmail() {
 }
 
 async function init() {
-  const [settings, email, tab] = await Promise.all([
-    getSettings(),
-    getSignedInEmail(),
-    getActiveTab(),
-  ]);
+  try {
+    const [settings, tab] = await Promise.all([getSettings(), getActiveTab()]);
 
-  if (!settings.backendUrl) {
+    if (!settings.backendUrl) { showState('unconfigured'); return; }
+
+    const pattern = originPatternFor(settings.backendUrl);
+    const hasPermission = pattern && (await chrome.permissions.contains({ origins: [pattern] }));
+    if (!hasPermission) { showState('unconfigured'); return; }
+
+    if (tab) {
+      document.getElementById('url').value = tab.url || '';
+      document.getElementById('title').value = tab.title || '';
+    }
+
+    showState('form');
+
+    // Email check is a UX guard only — run it after the form is visible so it
+    // never blocks load. Switch to denied if it comes back unauthorized.
+    getSignedInEmail().then((email) => {
+      if (!email || !settings.allowedEmails.includes(email)) {
+        showState('denied');
+      } else {
+        document.getElementById('signed-in-as').textContent = `Signed in as ${email}`;
+      }
+    }).catch(() => {});
+  } catch (err) {
+    console.error('Get the Job popup init failed:', err);
     showState('unconfigured');
     return;
   }
-
-  const pattern = originPatternFor(settings.backendUrl);
-  const hasPermission = pattern && (await chrome.permissions.contains({ origins: [pattern] }));
-  if (!hasPermission) {
-    showState('unconfigured');
-    return;
-  }
-
-  if (!email || !settings.allowedEmails.includes(email)) {
-    showState('denied');
-    return;
-  }
-
-  document.getElementById('signed-in-as').textContent = `Signed in as ${email}`;
-
-  if (tab) {
-    document.getElementById('url').value = tab.url || '';
-    document.getElementById('title').value = tab.title || '';
-  }
-
-  showState('form');
 
   document.getElementById('submit').addEventListener('click', async () => {
     const submitBtn = document.getElementById('submit');

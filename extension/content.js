@@ -25,11 +25,15 @@ function extractJobTitle() {
     }
   }
 
-  // 3. First <h1> that doesn't contain an anchor tag — nav/brand h1s almost
-  //    always wrap a logo link; job title h1s are plain text.
-  const plainH1 = [...document.querySelectorAll('h1')].find(el => !el.querySelector('a'));
-  if (plainH1) {
-    const text = plainH1.textContent.replace(/\s+/g, ' ').trim();
+  // 3. Among plain h1s (no anchor tag), prefer one whose parent container
+  //    also mentions location or job type — job title blocks almost always
+  //    have "Remote", "Full-time", etc. nearby; marketing slogans don't.
+  const plainH1s = [...document.querySelectorAll('h1')].filter(el => !el.querySelector('a'));
+  const jobTypePattern = /remote|hybrid|on.?site|full.?time|part.?time|contract|salary|\$\d/i;
+  const jobH1 = plainH1s.find(el => jobTypePattern.test(el.parentElement?.textContent || ''))
+    ?? plainH1s[0];
+  if (jobH1) {
+    const text = jobH1.textContent.replace(/\s+/g, ' ').trim();
     if (text) return text;
   }
 

@@ -4,6 +4,7 @@ import { Card, Button, Badge, Textarea, Input, renderBold, renderMarkdown } from
 import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X } from 'lucide-react';
 import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, selectResumeLines, getRelevantTechnicalQuestions } from '../services/gemini';
 import { renderResumeMarkdown, trimToBudget, getCandidateLines } from '../services/resumeRenderer';
+import { downloadResume, DownloadFormat } from '../services/resumeDownload';
 import { ResumeSectionForm } from '../components/ResumeSectionForm';
 import { Job } from '../types';
 
@@ -178,17 +179,12 @@ export const JobDetail: React.FC = () => {
         ? renderResumeMarkdown(resumeSections, resumeTextBlocks, resumeEntries, resumeLines, includedLineIds)
         : null;
 
-    const handleExportGeneratedResume = () => {
+    const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+
+    const handleExportGeneratedResume = (format: DownloadFormat) => {
         if (!generatedMarkdown) return;
-        const blob = new Blob([generatedMarkdown], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${job.company.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_tailored_resume.md`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        downloadResume(generatedMarkdown, `${job.company}_tailored_resume`, format);
+        setShowDownloadMenu(false);
     };
 
     const handleSaveGeneratedResume = () => {
@@ -621,7 +617,18 @@ export const JobDetail: React.FC = () => {
                                                 </span>
                                                 <div className="flex space-x-2">
                                                     <Button variant="ghost" icon={Save} onClick={handleSaveGeneratedResume} title="Save" />
-                                                    <Button variant="ghost" icon={Download} onClick={handleExportGeneratedResume} title="Export .md" />
+                                                    <div className="relative">
+                                                        <Button variant="ghost" icon={Download} onClick={() => setShowDownloadMenu(v => !v)} title="Download resume" />
+                                                        {showDownloadMenu && (
+                                                            <div className="absolute right-0 bottom-full mb-1 bg-white border border-sand rounded-lg shadow-lg z-10 text-sm overflow-hidden">
+                                                                {(['md', 'pdf', 'doc'] as DownloadFormat[]).map(fmt => (
+                                                                    <button key={fmt} onClick={() => handleExportGeneratedResume(fmt)} className="block w-full text-left px-4 py-2 hover:bg-cream uppercase text-xs font-medium text-stone">
+                                                                        {fmt === 'pdf' ? 'PDF (print)' : fmt === 'doc' ? 'Word (.doc)' : 'Markdown (.md)'}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
 

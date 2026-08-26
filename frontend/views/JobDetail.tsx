@@ -6,7 +6,7 @@ import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, ge
 import { Job } from '../types';
 
 export const JobDetail: React.FC = () => {
-    const { jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume, setJobAnalysis, jobSources } = useAppStore();
+    const { jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume, setJobAnalysis, jobSources, addInterviewQuestion } = useAppStore();
     const [activeTab, setActiveTab] = useState<'details' | 'ai' | 'notes'>('details');
     
     // Edit State
@@ -24,6 +24,7 @@ export const JobDetail: React.FC = () => {
     const [isGeneratingResume, setIsGeneratingResume] = useState(false);
     
     const [aiQuestions, setAiQuestions] = useState<string | null>(null);
+    const [savedAiQuestions, setSavedAiQuestions] = useState<Set<number>>(new Set());
     const [aiTailorAdvice, setAiTailorAdvice] = useState<string | null>(null);
     const [tailoredResumeContent, setTailoredResumeContent] = useState<string | null>(null);
     const [selectedResumeId, setSelectedResumeId] = useState<string>(resumes[0]?.id || '');
@@ -89,6 +90,7 @@ export const JobDetail: React.FC = () => {
     const handleGenerateQuestions = async () => {
         if (!job.description) return alert("Please add a job description first.");
         setIsGeneratingQuestions(true);
+        setSavedAiQuestions(new Set());
         try {
             const result = await generateInterviewQuestions(job.description, preferences, interviewQuestions);
             setAiQuestions(result);
@@ -488,14 +490,50 @@ export const JobDetail: React.FC = () => {
                                         {isGeneratingQuestions ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Generate Qs'}
                                     </Button>
                                 </div>
+
+                                {interviewQuestions.filter(q => q.response?.trim()).length > 0 && (
+                                    <div className="mb-5">
+                                        <h3 className="text-xs font-semibold text-taupe uppercase tracking-wider mb-3">From Your Saved Prep</h3>
+                                        <ul className="space-y-3">
+                                            {interviewQuestions.filter(q => q.response?.trim()).map(q => (
+                                                <li key={q.id} className="text-sm bg-cream rounded-lg p-3 space-y-1">
+                                                    <p className="font-medium text-ink">{q.question}</p>
+                                                    <p className="text-taupe">{q.response}</p>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
                                 {aiQuestions ? (
-                                    <ul className="space-y-3">
-                                        {aiQuestions.split('\n').filter(l => l.trim()).map((line, i) => (
-                                            <li key={i} className="text-sm text-ink">{renderBold(line)}</li>
-                                        ))}
-                                    </ul>
+                                    <div>
+                                        <h3 className="text-xs font-semibold text-taupe uppercase tracking-wider mb-3">AI Suggested Questions</h3>
+                                        <ul className="space-y-3">
+                                            {aiQuestions.split('\n').filter(l => l.trim()).map((line, i) => (
+                                                <li key={i} className="text-sm text-ink flex items-start justify-between gap-2">
+                                                    <span>{renderBold(line)}</span>
+                                                    {savedAiQuestions.has(i) ? (
+                                                        <CheckCircle2 className="w-4 h-4 text-sage flex-shrink-0 mt-0.5" />
+                                                    ) : (
+                                                        <button
+                                                            title="Save to Interview Prep"
+                                                            className="text-taupe hover:text-wood flex-shrink-0 mt-0.5"
+                                                            onClick={() => {
+                                                                addInterviewQuestion({ question: line.replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, ''), response: '', category: 'General' });
+                                                                setSavedAiQuestions(prev => new Set(prev).add(i));
+                                                            }}
+                                                        >
+                                                            <Plus className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
                                 ) : (
-                                    <p className="text-taupe text-sm">Generate potential interview questions based on the job description.</p>
+                                    !interviewQuestions.filter(q => q.response?.trim()).length && (
+                                        <p className="text-taupe text-sm">Generate potential interview questions based on the job description.</p>
+                                    )
                                 )}
                             </Card>
 

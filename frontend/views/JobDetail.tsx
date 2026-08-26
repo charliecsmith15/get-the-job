@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Badge, Textarea, Input, renderBold, renderMarkdown } from '../components/UI';
-import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X, ScrollText, Mic, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X, ScrollText, Mic, ChevronDown, ChevronUp } from 'lucide-react';
 import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, selectResumeLines, getRelevantTechnicalQuestions } from '../services/gemini';
 import { renderResumeMarkdown, trimToBudget, getCandidateLines } from '../services/resumeRenderer';
 import { downloadResume, DownloadFormat } from '../services/resumeDownload';
@@ -197,7 +197,7 @@ export const JobDetail: React.FC = () => {
     const rawAnalysis = jobAnalyses.find(a => a.jobId === job.id) ?? null;
     const analysis = rawAnalysis ? {
         ...rawAnalysis,
-        petals: Array.isArray(rawAnalysis.petals) ? rawAnalysis.petals : [],
+        fitReason: Array.isArray(rawAnalysis.fitReason) ? rawAnalysis.fitReason : [rawAnalysis.fitReason as unknown as string],
         resumeEdits: Array.isArray(rawAnalysis.resumeEdits) ? rawAnalysis.resumeEdits : [rawAnalysis.resumeEdits as unknown as string],
         missingExperience: Array.isArray(rawAnalysis.missingExperience) ? rawAnalysis.missingExperience : (rawAnalysis.missingExperience ? [rawAnalysis.missingExperience as unknown as string] : []),
     } : null;
@@ -469,7 +469,7 @@ export const JobDetail: React.FC = () => {
 
                         <Card className="p-6">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-lg font-semibold text-ink flex items-center"><Target className="w-5 h-5 mr-2 text-wood"/> Petals Alignment</h2>
+                                <h2 className="text-lg font-semibold text-ink flex items-center"><Target className="w-5 h-5 mr-2 text-wood"/> Job Match Analysis</h2>
                                 <Button variant="secondary" onClick={handleAnalyzeMatch} disabled={isAnalyzing || !job.description}>
                                     {isAnalyzing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Analyzing...</> : 'Analyze Match'}
                                 </Button>
@@ -477,42 +477,45 @@ export const JobDetail: React.FC = () => {
 
                             {analysis ? (
                                 <div className="space-y-6">
-                                    <div className="space-y-3">
-                                        {analysis.petals.map((petal, i) => {
-                                            const colors = {
-                                                'aligned': 'bg-sage/10 text-sage border-sage/30',
-                                                'not-aligned': 'bg-danger/10 text-danger border-danger/30',
-                                                'unsure': 'bg-sand text-taupe border-sand',
-                                            };
-                                            const badgeClass = colors[petal.alignment as keyof typeof colors] ?? colors['unsure'];
-                                            return (
-                                                <div key={i} className="flex items-start gap-4 p-3 rounded-lg bg-cream border border-sand">
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-semibold text-ink mb-0.5">{petal.name}</p>
-                                                        <p className="text-sm text-taupe">{petal.summary}</p>
-                                                    </div>
-                                                    <span className={`flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full border capitalize ${badgeClass}`}>
-                                                        {petal.alignment}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    {analysis.missingExperience.length > 0 && (
-                                        <div className="pt-4 border-t border-sand">
-                                            <h4 className="font-medium text-ink mb-2">What from my experience is missing?</h4>
-                                            <ol className="bg-cream p-4 rounded-lg space-y-3">
-                                                {analysis.missingExperience.map((item, i) => (
-                                                    <li key={i} className="text-sm text-ink flex items-start">
-                                                        <span className="mr-2 font-medium text-wood flex-shrink-0">{i + 1}.</span>{renderBold(item)}
-                                                    </li>
-                                                ))}
-                                            </ol>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <h4 className="font-medium text-sage flex items-center mb-2"><CheckCircle2 className="w-4 h-4 mr-1"/> Pros</h4>
+                                            <ul className="space-y-2">
+                                                {analysis.pros.map((pro, i) => <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-sage">•</span>{renderBold(pro)}</li>)}
+                                            </ul>
                                         </div>
-                                    )}
+                                        <div>
+                                            <h4 className="font-medium text-danger flex items-center mb-2"><XCircle className="w-4 h-4 mr-1"/> Potential Concerns</h4>
+                                            <ul className="space-y-2">
+                                                {analysis.cons.map((con, i) => <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-danger">•</span>{renderBold(con)}</li>)}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 pt-4 border-t border-sand">
+                                        <div>
+                                            <h4 className="font-medium text-ink mb-2">Why am I a good fit for this role?</h4>
+                                            <ul className="bg-cream p-4 rounded-lg space-y-2">
+                                                {analysis.fitReason.map((point, i) => (
+                                                    <li key={i} className="text-sm text-ink flex items-start"><span className="mr-2 text-sage flex-shrink-0">•</span>{renderBold(point)}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                        {analysis.missingExperience.length > 0 && (
+                                            <div>
+                                                <h4 className="font-medium text-ink mb-2">What from my experience is missing?</h4>
+                                                <ol className="bg-cream p-4 rounded-lg space-y-3">
+                                                    {analysis.missingExperience.map((item, i) => (
+                                                        <li key={i} className="text-sm text-ink flex items-start">
+                                                            <span className="mr-2 font-medium text-wood flex-shrink-0">{i + 1}.</span>{renderBold(item)}
+                                                        </li>
+                                                    ))}
+                                                </ol>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ) : (
-                                <p className="text-taupe text-sm">Click analyze to see how this job aligns with your Petals Exercise.</p>
+                                <p className="text-taupe text-sm">Click analyze to see how well this job matches your career preferences.</p>
                             )}
                         </Card>
                     </div>

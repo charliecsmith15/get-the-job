@@ -36,18 +36,51 @@ export interface Note {
     isAiGenerated?: boolean;
 }
 
-export interface Resume {
+export type ResumeSectionType = 'text' | 'entries' | 'list';
+
+export interface ResumeSectionConfig {
     id: string;
-    name: string;
+    label: string;
+    type: ResumeSectionType;
+    order: number;
+}
+
+export interface ResumeTextBlock {
+    sectionId: string;
     content: string;
-    targetRole: string;
-    lastUpdated: string;
+    updatedAt: string;
+}
+
+export interface ResumeEntry {
+    id: string;
+    sectionId: string;
+    heading: string;
+    subheading?: string;
+    startDate?: string;
+    endDate?: string;
+    order: number;
+}
+
+export interface ResumeLine {
+    id: string;
+    sectionId: string;
+    entryId?: string | null;
+    jobId?: string | null;
+    content: string;
+    order: number;
+}
+
+export interface ResumeGeneration {
+    jobId: string;
+    selectedLineIds: string[];
+    renderedMarkdown: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Preferences {
     petalsExercise: string;
     linkedInProfile?: string;
-    primaryResume?: string;
 }
 
 export interface ContextResource {

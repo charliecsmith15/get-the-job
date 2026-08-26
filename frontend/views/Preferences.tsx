@@ -114,13 +114,10 @@ export const PreferencesView: React.FC = () => {
                         value={form.linkedInProfile ?? ''}
                         onChange={e => setForm({...form, linkedInProfile: e.target.value})}
                     />
-                    <Textarea
-                        label="Primary Resume"
-                        rows={16}
-                        placeholder="Paste your canonical resume here. This is the single resume the AI uses as foundational context across all features — match analysis, interview prep, and coaching. Use the Resume Manager for job-specific tailored versions."
-                        value={form.primaryResume ?? ''}
-                        onChange={e => setForm({...form, primaryResume: e.target.value})}
-                    />
+                </div>
+                <div className="bg-sage-soft text-forest p-4 rounded-lg flex items-start text-sm">
+                    <Info className="w-5 h-5 mr-3 flex-shrink-0 mt-0.5" />
+                    <p>Your resume now lives in its own editor — see the "Resume" tab in the sidebar. It's used as foundational context here too.</p>
                 </div>
 
                 <div className="pt-4 border-t border-sand flex justify-end items-center space-x-4">

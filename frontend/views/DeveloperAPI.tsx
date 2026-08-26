@@ -15,7 +15,9 @@ export const DeveloperAPI: React.FC = () => {
         const state = {
             jobs: store.jobs,
             notes: store.notes,
-            resumes: store.resumes,
+            resumeTextBlocks: store.resumeTextBlocks,
+            resumeEntries: store.resumeEntries,
+            resumeLines: store.resumeLines,
             preferences: store.preferences,
             contextResources: store.contextResources,
             journalEntries: store.journalEntries,
@@ -125,12 +127,33 @@ CREATE TABLE notes (
     isAiGenerated BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE resumes (
-    id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(255),
+-- The single structured resume — see backend/resumeSections.js for the
+-- section config these are keyed against.
+CREATE TABLE resume_section_content (
+    accountId INTEGER,
+    sectionId VARCHAR(50),
     content TEXT,
-    targetRole VARCHAR(255),
-    lastUpdated TIMESTAMP
+    updatedAt TIMESTAMP,
+    PRIMARY KEY (accountId, sectionId)
+);
+
+CREATE TABLE resume_entries (
+    id VARCHAR(50) PRIMARY KEY,
+    sectionId VARCHAR(50),
+    heading VARCHAR(255),
+    subheading VARCHAR(255),
+    startDate VARCHAR(50),
+    endDate VARCHAR(50),
+    "order" INTEGER
+);
+
+CREATE TABLE resume_lines (
+    id VARCHAR(50) PRIMARY KEY,
+    sectionId VARCHAR(50),
+    entryId VARCHAR(50) REFERENCES resume_entries(id) ON DELETE CASCADE,
+    jobId VARCHAR(50) REFERENCES jobs(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    "order" INTEGER
 );
 
 CREATE TABLE context_resources (
@@ -169,7 +192,7 @@ CREATE TABLE interview_questions (
                             <p className="text-xs text-taupe mb-3">Your backend must expose the following REST endpoints. The app calls these when SQL sync is enabled.</p>
                             <div className="bg-forest p-4 rounded-lg overflow-x-auto">
                                 <code className="text-xs text-sage-soft font-mono whitespace-pre">
-{`-- Standard resources (jobs, notes, resumes, context, preferences)
+{`-- Standard resources (jobs, notes, resume, context, preferences)
 GET    /api/jobs                     → list all
 POST   /api/jobs                     → create
 PUT    /api/jobs/:id                 → update
@@ -179,10 +202,17 @@ GET    /api/notes                    → list all
 POST   /api/notes                    → create
 DELETE /api/notes/:id                → delete
 
-GET    /api/resumes                  → list all
-POST   /api/resumes                  → create
-PUT    /api/resumes/:id              → update
-DELETE /api/resumes/:id              → delete
+GET    /api/resume-config            → section definitions
+GET    /api/resume                   → text blocks + entries + lines
+PUT    /api/resume/text/:sectionId   → upsert a text-type section
+POST   /api/resume/entries           → create an entry
+PUT    /api/resume/entries/:id       → update an entry
+DELETE /api/resume/entries/:id       → delete an entry
+POST   /api/resume/lines             → create a line (baseline or job-scoped)
+PUT    /api/resume/lines/:id         → update a line
+DELETE /api/resume/lines/:id         → delete a line
+GET    /api/resume-generations/:jobId → last AI selection for a job
+PUT    /api/resume-generations/:jobId → save an AI selection for a job
 
 GET    /api/context                  → list all
 POST   /api/context                  → create

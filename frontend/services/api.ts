@@ -1,4 +1,4 @@
-import { Job, JobAnalysis, Note, Resume, Preferences, ContextResource, JournalEntry, InterviewQuestion } from '../types';
+import { Job, JobAnalysis, Note, Preferences, ContextResource, JournalEntry, InterviewQuestion, ResumeSectionConfig, ResumeTextBlock, ResumeEntry, ResumeLine, ResumeGeneration } from '../types';
 
 /**
  * API Client for communicating with the SQL Backend.
@@ -31,14 +31,11 @@ import { Job, JobAnalysis, Note, Resume, Preferences, ContextResource, JournalEn
  *   isAiGenerated BOOLEAN DEFAULT FALSE
  * );
  * 
- * CREATE TABLE resumes (
- *   id VARCHAR(50) PRIMARY KEY,
- *   name VARCHAR(255),
- *   content TEXT,
- *   targetRole VARCHAR(255),
- *   lastUpdated TIMESTAMP
- * );
- * 
+ * The single structured resume is spread across a few tables — see
+ * backend/schema.sql (resume_section_content, resume_entries, resume_lines,
+ * resume_raw_import, resume_generations) and backend/resumeSections.js for
+ * the section config they're keyed against.
+ *
  * CREATE TABLE context_resources (
  *   id VARCHAR(50) PRIMARY KEY,
  *   title VARCHAR(255),
@@ -111,12 +108,24 @@ export const createApiClient = (baseUrl: string) => {
         createNote: (note: Note): Promise<void> => fetch(`${baseUrl}/notes`, { method: 'POST', headers, body: JSON.stringify(note) }).then(handleResponse),
         deleteNote: (id: string): Promise<void> => fetch(`${baseUrl}/notes/${id}`, { method: 'DELETE', headers }).then(handleResponse),
         
-        // Resumes
-        getResumes: (): Promise<Resume[]> => fetch(`${baseUrl}/resumes`, { headers }).then(handleResponse),
-        createResume: (resume: Resume): Promise<void> => fetch(`${baseUrl}/resumes`, { method: 'POST', headers, body: JSON.stringify(resume) }).then(handleResponse),
-        updateResume: (id: string, resume: Partial<Resume>): Promise<void> => fetch(`${baseUrl}/resumes/${id}`, { method: 'PUT', headers, body: JSON.stringify(resume) }).then(handleResponse),
-        deleteResume: (id: string): Promise<void> => fetch(`${baseUrl}/resumes/${id}`, { method: 'DELETE', headers }).then(handleResponse),
-        
+        // Resume — a single structured resume per account
+        getResumeConfig: (): Promise<{ sections: ResumeSectionConfig[]; totalCharBudget: number }> => fetch(`${baseUrl}/resume-config`, { headers }).then(handleResponse),
+        getResume: (): Promise<{ textBlocks: ResumeTextBlock[]; entries: ResumeEntry[]; lines: ResumeLine[] }> => fetch(`${baseUrl}/resume`, { headers }).then(handleResponse),
+        getResumeRawImport: (): Promise<{ content: string; importedAt: string } | null> => fetch(`${baseUrl}/resume/raw-import`, { headers }).then(handleResponse),
+        saveResumeRawImport: (content: string): Promise<void> => fetch(`${baseUrl}/resume/raw-import`, { method: 'PUT', headers, body: JSON.stringify({ content }) }).then(handleResponse),
+        updateResumeText: (sectionId: string, content: string): Promise<void> => fetch(`${baseUrl}/resume/text/${sectionId}`, { method: 'PUT', headers, body: JSON.stringify({ content }) }).then(handleResponse),
+        createResumeEntry: (entry: ResumeEntry): Promise<void> => fetch(`${baseUrl}/resume/entries`, { method: 'POST', headers, body: JSON.stringify(entry) }).then(handleResponse),
+        updateResumeEntry: (id: string, entry: Partial<ResumeEntry>): Promise<void> => fetch(`${baseUrl}/resume/entries/${id}`, { method: 'PUT', headers, body: JSON.stringify(entry) }).then(handleResponse),
+        deleteResumeEntry: (id: string): Promise<void> => fetch(`${baseUrl}/resume/entries/${id}`, { method: 'DELETE', headers }).then(handleResponse),
+        createResumeLine: (line: ResumeLine): Promise<void> => fetch(`${baseUrl}/resume/lines`, { method: 'POST', headers, body: JSON.stringify(line) }).then(handleResponse),
+        updateResumeLine: (id: string, line: Partial<ResumeLine>): Promise<void> => fetch(`${baseUrl}/resume/lines/${id}`, { method: 'PUT', headers, body: JSON.stringify(line) }).then(handleResponse),
+        deleteResumeLine: (id: string): Promise<void> => fetch(`${baseUrl}/resume/lines/${id}`, { method: 'DELETE', headers }).then(handleResponse),
+
+        // Resume Generations — the last AI line-selection + rendered Markdown per job
+        getResumeGenerations: (): Promise<ResumeGeneration[]> => fetch(`${baseUrl}/resume-generations`, { headers }).then(handleResponse),
+        getResumeGeneration: (jobId: string): Promise<ResumeGeneration | null> => fetch(`${baseUrl}/resume-generations/${jobId}`, { headers }).then(handleResponse),
+        saveResumeGeneration: (jobId: string, generation: { selectedLineIds: string[]; renderedMarkdown: string }): Promise<void> => fetch(`${baseUrl}/resume-generations/${jobId}`, { method: 'PUT', headers, body: JSON.stringify(generation) }).then(handleResponse),
+
         // Additional Context
         getContextResources: (): Promise<ContextResource[]> => fetch(`${baseUrl}/context`, { headers }).then(handleResponse),
         createContextResource: (resource: ContextResource): Promise<void> => fetch(`${baseUrl}/context`, { method: 'POST', headers, body: JSON.stringify(resource) }).then(handleResponse),

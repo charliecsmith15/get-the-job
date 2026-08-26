@@ -10,7 +10,7 @@ const COLUMNS: JobStatus[] = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Reje
 const BLANK_JOB: Partial<Job> = { title: '', company: '', status: 'Saved', url: '', description: '', location: '', dateApplied: '', source: '' };
 
 export const JobBoard: React.FC = () => {
-    const { jobs, jobAnalyses, addJob, updateJob, navigate, preferences, contextResources, journalEntries, setJobAnalysis, jobSources } = useAppStore();
+    const { jobs, jobAnalyses, addJob, updateJob, navigate, preferences, contextResources, journalEntries, setJobAnalysis, jobSources, resumeMarkdown } = useAppStore();
     const [isAdding, setIsAdding] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [newJob, setNewJob] = useState<Partial<Job>>(BLANK_JOB);
@@ -26,7 +26,7 @@ export const JobBoard: React.FC = () => {
         setTagsInput('');
 
         if (created.description) {
-            analyzeJobMatch(created.description, preferences, contextResources, journalEntries)
+            analyzeJobMatch(created.description, preferences, contextResources, journalEntries, resumeMarkdown)
                 .then(result => setJobAnalysis(created.id, result))
                 .catch(err => console.error('Auto-analysis failed:', err));
         }

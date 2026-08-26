@@ -2,11 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Badge, Textarea, Input, renderBold, renderMarkdown } from '../components/UI';
 import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X } from 'lucide-react';
-import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, generateTailoredResume, getRelevantTechnicalQuestions } from '../services/gemini';
+import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, selectResumeLines, getRelevantTechnicalQuestions } from '../services/gemini';
+import { renderResumeMarkdown, trimToBudget, getCandidateLines } from '../services/resumeRenderer';
+import { ResumeSectionForm } from '../components/ResumeSectionForm';
 import { Job } from '../types';
 
 export const JobDetail: React.FC = () => {
-    const { jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume, setJobAnalysis, jobSources, addInterviewQuestion } = useAppStore();
+    const {
+        jobs, notes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, setJobAnalysis, jobSources, addInterviewQuestion,
+        resumeSections, resumeCharBudget, resumeTextBlocks, resumeEntries, resumeLines, resumeMarkdown, resumeGenerations, saveResumeGeneration,
+    } = useAppStore();
     const [activeTab, setActiveTab] = useState<'details' | 'ai' | 'notes'>('details');
     
     // Edit State
@@ -28,8 +33,7 @@ export const JobDetail: React.FC = () => {
     const [relevantTechnicalIds, setRelevantTechnicalIds] = useState<string[] | null>(null);
     const [isCheckingRelevance, setIsCheckingRelevance] = useState(false);
     const [aiTailorAdvice, setAiTailorAdvice] = useState<string | null>(null);
-    const [tailoredResumeContent, setTailoredResumeContent] = useState<string | null>(null);
-    const [selectedResumeId, setSelectedResumeId] = useState<string>(resumes[0]?.id || '');
+    const [includedLineIds, setIncludedLineIds] = useState<Set<string> | null>(null);
 
     const job = jobs.find(j => j.id === selectedJobId);
     const jobNotes = notes.filter(n => n.jobId === selectedJobId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -37,10 +41,18 @@ export const JobDetail: React.FC = () => {
     useEffect(() => {
         if (!job?.description || jobAnalyses[job.id]) return;
         setIsAnalyzing(true);
-        analyzeJobMatch(job.description, preferences, contextResources, journalEntries)
+        analyzeJobMatch(job.description, preferences, contextResources, journalEntries, resumeMarkdown)
             .then(result => setJobAnalysis(job.id, result))
             .catch(() => {})
             .finally(() => setIsAnalyzing(false));
+    }, [job?.id]);
+
+    // Load this job's last saved resume generation (if any) so reopening
+    // the job re-shows it, including any manual checkbox overrides.
+    useEffect(() => {
+        const existing = job ? resumeGenerations.find(g => g.jobId === job.id) : null;
+        setIncludedLineIds(existing ? new Set(existing.selectedLineIds) : null);
+        setAiTailorAdvice(null);
     }, [job?.id]);
 
     useEffect(() => {
@@ -93,7 +105,7 @@ export const JobDetail: React.FC = () => {
         if (!job.description) return alert("Please add a job description first.");
         setIsAnalyzing(true);
         try {
-            const result = await analyzeJobMatch(job.description, preferences, contextResources, journalEntries);
+            const result = await analyzeJobMatch(job.description, preferences, contextResources, journalEntries, resumeMarkdown);
             setJobAnalysis(job.id, result);
         } catch (error) {
             alert("Failed to analyze match. Check console or API key.");
@@ -107,7 +119,7 @@ export const JobDetail: React.FC = () => {
         setIsGeneratingQuestions(true);
         setSavedAiQuestions(new Set());
         try {
-            const result = await generateInterviewQuestions(job.description, preferences, interviewQuestions);
+            const result = await generateInterviewQuestions(job.description, preferences, interviewQuestions, resumeMarkdown);
             setAiQuestions(result);
         } catch (error) {
             alert("Failed to generate questions.");
@@ -118,14 +130,11 @@ export const JobDetail: React.FC = () => {
 
     const handleTailorAdvice = async () => {
         if (!job.description) return alert("Please add a job description first.");
-        const resume = resumes.find(r => r.id === selectedResumeId);
-        if (!resume) return alert("Please select a resume.");
-        
+
         setIsTailoring(true);
         try {
-            const result = await tailorResumeSuggestion(job.description, resume, preferences, contextResources, journalEntries);
+            const result = await tailorResumeSuggestion(job.description, resumeMarkdown, preferences, contextResources, journalEntries);
             setAiTailorAdvice(result);
-            setTailoredResumeContent(null); // Clear full resume if switching to advice
         } catch (error) {
             alert("Failed to generate tailoring advice.");
         } finally {
@@ -133,16 +142,23 @@ export const JobDetail: React.FC = () => {
         }
     };
 
-    const handleGenerateFullResume = async () => {
+    // The AI only selects which candidate lines to include — it never
+    // rewrites the resume. We then deterministically render the result and
+    // trim to the length budget if the selection still comes in over it.
+    const handleGenerateResume = async () => {
         if (!job.description) return alert("Please add a job description first.");
-        const resume = resumes.find(r => r.id === selectedResumeId);
-        if (!resume) return alert("Please select a resume.");
-        
+
         setIsGeneratingResume(true);
         try {
-            const result = await generateTailoredResume(job.description, resume, preferences, contextResources, journalEntries);
-            setTailoredResumeContent(result);
-            setAiTailorAdvice(null); // Clear advice if switching to full resume
+            const candidateLines = getCandidateLines(resumeLines, job.id).map(l => ({ id: l.id, sectionId: l.sectionId, entryId: l.entryId, content: l.content }));
+            const entriesForPrompt = resumeEntries.map(e => ({ id: e.id, sectionId: e.sectionId, heading: e.heading, subheading: e.subheading }));
+            const selections = await selectResumeLines(
+                job.description, resumeSections, entriesForPrompt, candidateLines, resumeCharBudget,
+                resumeMarkdown, preferences, contextResources, journalEntries
+            );
+            const { includedLineIds: trimmed } = trimToBudget(resumeSections, resumeTextBlocks, resumeEntries, resumeLines, selections, resumeCharBudget);
+            setIncludedLineIds(trimmed);
+            setAiTailorAdvice(null);
         } catch (error) {
             alert("Failed to generate tailored resume.");
         } finally {
@@ -150,9 +166,21 @@ export const JobDetail: React.FC = () => {
         }
     };
 
-    const handleExportTailoredResume = () => {
-        if (!tailoredResumeContent) return;
-        const blob = new Blob([tailoredResumeContent], { type: 'text/markdown' });
+    const toggleGeneratedLine = (lineId: string) => {
+        setIncludedLineIds(prev => {
+            const next = new Set(prev ?? []);
+            if (next.has(lineId)) next.delete(lineId); else next.add(lineId);
+            return next;
+        });
+    };
+
+    const generatedMarkdown = includedLineIds
+        ? renderResumeMarkdown(resumeSections, resumeTextBlocks, resumeEntries, resumeLines, includedLineIds)
+        : null;
+
+    const handleExportGeneratedResume = () => {
+        if (!generatedMarkdown) return;
+        const blob = new Blob([generatedMarkdown], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -163,14 +191,10 @@ export const JobDetail: React.FC = () => {
         URL.revokeObjectURL(url);
     };
 
-    const handleSaveTailoredResumeToDB = () => {
-        if (!tailoredResumeContent) return;
-        addResume({
-            name: `${job.company} - Tailored`,
-            targetRole: job.title,
-            content: tailoredResumeContent
-        });
-        alert("Saved to Resume Database!");
+    const handleSaveGeneratedResume = () => {
+        if (!includedLineIds || !generatedMarkdown) return;
+        saveResumeGeneration(job.id, Array.from(includedLineIds), generatedMarkdown);
+        alert("Saved!");
     };
 
     const rawAnalysis = jobAnalyses.find(a => a.jobId === job.id) ?? null;
@@ -561,50 +585,79 @@ export const JobDetail: React.FC = () => {
                                 )}
                             </Card>
 
+                            {/* Additional lines for this job */}
+                            <Card className="p-6">
+                                <h2 className="text-lg font-semibold text-ink mb-2">Additional Resume Lines</h2>
+                                <p className="text-taupe text-sm mb-4">Add extra bullet points specific to this job application. The AI decides whether to include them alongside your baseline resume when generating below.</p>
+                                <ResumeSectionForm mode="job" jobId={job.id} />
+                            </Card>
+
                             {/* Resume Tailoring */}
                             <Card className="p-6">
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-lg font-semibold text-ink">Tailor Resume</h2>
                                 </div>
                                 <div className="space-y-4">
-                                    <select 
-                                        className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
-                                        value={selectedResumeId}
-                                        onChange={e => setSelectedResumeId(e.target.value)}
-                                    >
-                                        <option value="" disabled>Select a base resume...</option>
-                                        {resumes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                    </select>
-                                    
                                     <div className="flex space-x-2">
-                                        <Button className="flex-1" variant="secondary" onClick={handleTailorAdvice} disabled={isTailoring || isGeneratingResume || !job.description || !selectedResumeId}>
+                                        <Button className="flex-1" variant="secondary" onClick={handleTailorAdvice} disabled={isTailoring || isGeneratingResume || !job.description}>
                                             {isTailoring ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Get Advice'}
                                         </Button>
-                                        <Button className="flex-1" variant="primary" onClick={handleGenerateFullResume} disabled={isTailoring || isGeneratingResume || !job.description || !selectedResumeId}>
+                                        <Button className="flex-1" variant="primary" onClick={handleGenerateResume} disabled={isTailoring || isGeneratingResume || !job.description}>
                                             {isGeneratingResume ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Generate Resume'}
                                         </Button>
                                     </div>
-                                    
+
                                     {aiTailorAdvice && (
                                         <div className="mt-4 p-4 bg-cream rounded-lg border border-sand max-h-64 overflow-y-auto crm-scrollbar">
                                             {renderMarkdown(aiTailorAdvice)}
                                         </div>
                                     )}
 
-                                    {tailoredResumeContent && (
+                                    {includedLineIds && (
                                         <div className="mt-4 space-y-3 crm-enter">
                                             <div className="flex justify-between items-center">
-                                                <span className="text-sm font-medium text-ink">Generated Resume (Markdown)</span>
+                                                <span className={`text-xs font-medium ${(generatedMarkdown?.length || 0) > resumeCharBudget ? 'text-danger' : 'text-taupe'}`}>
+                                                    {generatedMarkdown?.length || 0} / {resumeCharBudget} characters
+                                                </span>
                                                 <div className="flex space-x-2">
-                                                    <Button variant="ghost" size="sm" icon={Save} onClick={handleSaveTailoredResumeToDB} title="Save to DB" />
-                                                    <Button variant="ghost" size="sm" icon={Download} onClick={handleExportTailoredResume} title="Export .md" />
+                                                    <Button variant="ghost" icon={Save} onClick={handleSaveGeneratedResume} title="Save" />
+                                                    <Button variant="ghost" icon={Download} onClick={handleExportGeneratedResume} title="Export .md" />
                                                 </div>
                                             </div>
-                                            <textarea 
-                                                className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus font-mono text-xs h-64 crm-scrollbar"
-                                                value={tailoredResumeContent}
-                                                onChange={e => setTailoredResumeContent(e.target.value)}
-                                            />
+
+                                            <div className="max-h-64 overflow-y-auto crm-scrollbar border border-sand rounded-lg p-3 space-y-3">
+                                                {resumeSections.filter(s => s.type !== 'text').sort((a, b) => a.order - b.order).map(section => {
+                                                    const entryGroups = section.type === 'entries'
+                                                        ? resumeEntries.filter(e => e.sectionId === section.id).sort((a, b) => a.order - b.order)
+                                                        : [null];
+                                                    return (
+                                                        <div key={section.id}>
+                                                            <p className="text-xs font-semibold text-taupe uppercase tracking-wide mb-1">{section.label}</p>
+                                                            {entryGroups.map(entry => {
+                                                                const lines = getCandidateLines(resumeLines, job.id)
+                                                                    .filter(l => l.sectionId === section.id && (entry ? l.entryId === entry.id : !l.entryId))
+                                                                    .sort((a, b) => a.order - b.order);
+                                                                if (!lines.length) return null;
+                                                                return (
+                                                                    <div key={entry?.id || 'list'} className="mb-2">
+                                                                        {entry && <p className="text-xs font-medium text-ink">{[entry.heading, entry.subheading].filter(Boolean).join(', ')}</p>}
+                                                                        {lines.map(l => (
+                                                                            <label key={l.id} className="flex items-start space-x-2 text-xs py-0.5 cursor-pointer">
+                                                                                <input type="checkbox" className="mt-0.5" checked={includedLineIds.has(l.id)} onChange={() => toggleGeneratedLine(l.id)} />
+                                                                                <span className="text-ink">{l.content}{l.jobId && <span className="text-forest"> (added for this job)</span>}</span>
+                                                                            </label>
+                                                                        ))}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            <div className="p-4 bg-cream rounded-lg border border-sand max-h-64 overflow-y-auto crm-scrollbar">
+                                                {renderMarkdown(generatedMarkdown)}
+                                            </div>
                                         </div>
                                     )}
                                 </div>

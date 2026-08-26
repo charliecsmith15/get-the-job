@@ -43,7 +43,7 @@ export const Chatbot: React.FC = () => {
             const state = {
                 jobs: store.jobs,
                 notes: store.notes,
-                resumes: store.resumes,
+                resumeMarkdown: store.resumeMarkdown,
                 preferences: store.preferences,
                 contextResources: store.contextResources
             };

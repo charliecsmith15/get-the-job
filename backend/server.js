@@ -12,6 +12,7 @@ import { GoogleAuth, OAuth2Client } from 'google-auth-library';
 import fetch from 'node-fetch';
 import rateLimit from 'express-rate-limit';
 import { WebSocketServer, WebSocket } from 'ws';
+import { RESUME_SECTIONS, TOTAL_CHAR_BUDGET, getSection } from './resumeSections.js';
 
 const app = express();
 app.use(cors({
@@ -507,37 +508,146 @@ app.delete('/api/notes/:id', async (req, res) => {
   } catch (e) { dbError(res, e); }
 });
 
-// Resumes
-app.get('/api/resumes', async (req, res) => {
+// Resume — a single structured resume per account. Section definitions
+// (ids/labels/types) live in ./resumeSections.js, not here, so they can be
+// changed without touching routes or the frontend.
+app.get('/api/resume-config', (req, res) => {
+  res.json({ sections: RESUME_SECTIONS, totalCharBudget: TOTAL_CHAR_BUDGET });
+});
+
+app.get('/api/resume', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM resumes WHERE "accountId"=$1 ORDER BY "lastUpdated" DESC', [req.accountId]);
-    res.json(rows);
+    const [textBlocks, entries, lines] = await Promise.all([
+      pool.query('SELECT * FROM resume_section_content WHERE "accountId"=$1', [req.accountId]),
+      pool.query('SELECT * FROM resume_entries WHERE "accountId"=$1 ORDER BY "order" ASC', [req.accountId]),
+      pool.query('SELECT * FROM resume_lines WHERE "accountId"=$1 ORDER BY "order" ASC', [req.accountId]),
+    ]);
+    res.json({ textBlocks: textBlocks.rows, entries: entries.rows, lines: lines.rows });
   } catch (e) { dbError(res, e); }
 });
-app.post('/api/resumes', async (req, res) => {
+
+app.get('/api/resume/raw-import', async (req, res) => {
   try {
-    const r = req.body;
-    await pool.query(
-      `INSERT INTO resumes (id, "accountId", name, content, "targetRole", "lastUpdated")
-       VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (id) DO NOTHING`,
-      [r.id, req.accountId, r.name, r.content, r.targetRole, r.lastUpdated]
-    );
-    res.status(201).json(r);
+    const { rows } = await pool.query('SELECT * FROM resume_raw_import WHERE "accountId"=$1', [req.accountId]);
+    res.json(rows[0] ?? null);
   } catch (e) { dbError(res, e); }
 });
-app.put('/api/resumes/:id', async (req, res) => {
+app.put('/api/resume/raw-import', async (req, res) => {
   try {
-    const r = req.body;
+    const { content } = req.body;
     await pool.query(
-      `UPDATE resumes SET name=$3, content=$4, "targetRole"=$5, "lastUpdated"=$6 WHERE id=$1 AND "accountId"=$2`,
-      [req.params.id, req.accountId, r.name, r.content, r.targetRole, r.lastUpdated]
+      `INSERT INTO resume_raw_import ("accountId", content, "importedAt") VALUES ($1,$2,NOW())
+       ON CONFLICT ("accountId") DO UPDATE SET content=$2, "importedAt"=NOW()`,
+      [req.accountId, content ?? '']
     );
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
-app.delete('/api/resumes/:id', async (req, res) => {
+
+app.put('/api/resume/text/:sectionId', async (req, res) => {
   try {
-    await pool.query('DELETE FROM resumes WHERE id=$1 AND "accountId"=$2', [req.params.id, req.accountId]);
+    const section = getSection(req.params.sectionId);
+    if (!section || section.type !== 'text') return res.status(400).json({ error: 'Unknown text section' });
+    const { content } = req.body;
+    await pool.query(
+      `INSERT INTO resume_section_content ("accountId", "sectionId", content, "updatedAt") VALUES ($1,$2,$3,NOW())
+       ON CONFLICT ("accountId","sectionId") DO UPDATE SET content=$3, "updatedAt"=NOW()`,
+      [req.accountId, req.params.sectionId, content ?? '']
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+
+app.post('/api/resume/entries', async (req, res) => {
+  try {
+    const en = req.body;
+    const section = getSection(en.sectionId);
+    if (!section || section.type !== 'entries') return res.status(400).json({ error: 'Unknown entries section' });
+    await pool.query(
+      `INSERT INTO resume_entries (id, "accountId", "sectionId", heading, subheading, "startDate", "endDate", "order")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
+      [en.id, req.accountId, en.sectionId, en.heading || null, en.subheading || null, en.startDate || null, en.endDate || null, en.order ?? 0]
+    );
+    res.status(201).json(en);
+  } catch (e) { dbError(res, e); }
+});
+app.put('/api/resume/entries/:id', async (req, res) => {
+  try {
+    const en = req.body;
+    await pool.query(
+      `UPDATE resume_entries SET heading=$3, subheading=$4, "startDate"=$5, "endDate"=$6, "order"=$7 WHERE id=$1 AND "accountId"=$2`,
+      [req.params.id, req.accountId, en.heading || null, en.subheading || null, en.startDate || null, en.endDate || null, en.order ?? 0]
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+app.delete('/api/resume/entries/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM resume_entries WHERE id=$1 AND "accountId"=$2', [req.params.id, req.accountId]);
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+
+app.post('/api/resume/lines', async (req, res) => {
+  try {
+    const l = req.body;
+    const section = getSection(l.sectionId);
+    if (!section || section.type === 'text') return res.status(400).json({ error: 'Unknown or non-line section' });
+    if (l.jobId) {
+      const { rows } = await pool.query('SELECT 1 FROM jobs WHERE id=$1 AND "accountId"=$2', [l.jobId, req.accountId]);
+      if (!rows.length) return res.status(400).json({ error: 'Unknown job' });
+    }
+    if (l.entryId) {
+      const { rows } = await pool.query('SELECT 1 FROM resume_entries WHERE id=$1 AND "accountId"=$2', [l.entryId, req.accountId]);
+      if (!rows.length) return res.status(400).json({ error: 'Unknown entry' });
+    }
+    await pool.query(
+      `INSERT INTO resume_lines (id, "accountId", "sectionId", "entryId", "jobId", content, "order")
+       VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO NOTHING`,
+      [l.id, req.accountId, l.sectionId, l.entryId || null, l.jobId || null, l.content, l.order ?? 0]
+    );
+    res.status(201).json(l);
+  } catch (e) { dbError(res, e); }
+});
+app.put('/api/resume/lines/:id', async (req, res) => {
+  try {
+    const l = req.body;
+    await pool.query(
+      `UPDATE resume_lines SET content=$3, "order"=$4 WHERE id=$1 AND "accountId"=$2`,
+      [req.params.id, req.accountId, l.content, l.order ?? 0]
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+app.delete('/api/resume/lines/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM resume_lines WHERE id=$1 AND "accountId"=$2', [req.params.id, req.accountId]);
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+
+// Resume Generations — the last AI line-selection + rendered Markdown per job.
+app.get('/api/resume-generations', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM resume_generations WHERE "accountId"=$1 ORDER BY "updatedAt" DESC', [req.accountId]);
+    res.json(rows);
+  } catch (e) { dbError(res, e); }
+});
+app.get('/api/resume-generations/:jobId', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM resume_generations WHERE "jobId"=$1 AND "accountId"=$2', [req.params.jobId, req.accountId]);
+    res.json(rows[0] ?? null);
+  } catch (e) { dbError(res, e); }
+});
+app.put('/api/resume-generations/:jobId', async (req, res) => {
+  try {
+    const g = req.body;
+    await pool.query(
+      `INSERT INTO resume_generations ("jobId", "accountId", "selectedLineIds", "renderedMarkdown", "createdAt", "updatedAt")
+       VALUES ($1,$2,$3,$4,NOW(),NOW())
+       ON CONFLICT ("jobId") DO UPDATE SET "selectedLineIds"=$3, "renderedMarkdown"=$4, "updatedAt"=NOW()`,
+      [req.params.jobId, req.accountId, JSON.stringify(g.selectedLineIds ?? []), g.renderedMarkdown ?? '']
+    );
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
@@ -577,9 +687,9 @@ app.put('/api/preferences', async (req, res) => {
   try {
     const p = req.body;
     await pool.query(
-      `INSERT INTO preferences ("accountId", "petalsExercise", "linkedInProfile", "primaryResume") VALUES ($1,$2,$3,$4)
-       ON CONFLICT ("accountId") DO UPDATE SET "petalsExercise"=$2, "linkedInProfile"=$3, "primaryResume"=$4`,
-      [req.accountId, p.petalsExercise, p.linkedInProfile ?? null, p.primaryResume ?? null]
+      `INSERT INTO preferences ("accountId", "petalsExercise", "linkedInProfile") VALUES ($1,$2,$3)
+       ON CONFLICT ("accountId") DO UPDATE SET "petalsExercise"=$2, "linkedInProfile"=$3`,
+      [req.accountId, p.petalsExercise, p.linkedInProfile ?? null]
     );
     res.status(204).end();
   } catch (e) { dbError(res, e); }

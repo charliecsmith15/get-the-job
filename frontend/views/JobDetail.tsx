@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Badge, Textarea, Input, renderBold, renderMarkdown } from '../components/UI';
 import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X } from 'lucide-react';
-import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, generateTailoredResume } from '../services/gemini';
+import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, generateTailoredResume, getRelevantTechnicalQuestions } from '../services/gemini';
 import { Job } from '../types';
 
 export const JobDetail: React.FC = () => {
@@ -25,6 +25,8 @@ export const JobDetail: React.FC = () => {
     
     const [aiQuestions, setAiQuestions] = useState<string | null>(null);
     const [savedAiQuestions, setSavedAiQuestions] = useState<Set<number>>(new Set());
+    const [relevantTechnicalIds, setRelevantTechnicalIds] = useState<string[] | null>(null);
+    const [isCheckingRelevance, setIsCheckingRelevance] = useState(false);
     const [aiTailorAdvice, setAiTailorAdvice] = useState<string | null>(null);
     const [tailoredResumeContent, setTailoredResumeContent] = useState<string | null>(null);
     const [selectedResumeId, setSelectedResumeId] = useState<string>(resumes[0]?.id || '');
@@ -39,6 +41,19 @@ export const JobDetail: React.FC = () => {
             .then(result => setJobAnalysis(job.id, result))
             .catch(() => {})
             .finally(() => setIsAnalyzing(false));
+    }, [job?.id]);
+
+    useEffect(() => {
+        const technicalQs = interviewQuestions.filter(q => q.category === 'Technical' && q.response?.trim());
+        if (!job?.description || !technicalQs.length) {
+            setRelevantTechnicalIds([]);
+            return;
+        }
+        setIsCheckingRelevance(true);
+        getRelevantTechnicalQuestions(job.description, technicalQs.map(q => ({ id: q.id, question: q.question })))
+            .then(ids => setRelevantTechnicalIds(ids))
+            .catch(() => setRelevantTechnicalIds(technicalQs.map(q => q.id)))
+            .finally(() => setIsCheckingRelevance(false));
     }, [job?.id]);
 
     if (!job) {
@@ -491,19 +506,32 @@ export const JobDetail: React.FC = () => {
                                     </Button>
                                 </div>
 
-                                {interviewQuestions.filter(q => q.response?.trim()).length > 0 && (
-                                    <div className="mb-5">
-                                        <h3 className="text-xs font-semibold text-taupe uppercase tracking-wider mb-3">From Your Saved Prep</h3>
-                                        <ul className="space-y-3">
-                                            {interviewQuestions.filter(q => q.response?.trim()).map(q => (
-                                                <li key={q.id} className="text-sm bg-cream rounded-lg p-3 space-y-1">
-                                                    <p className="font-medium text-ink">{q.question}</p>
-                                                    <p className="text-taupe">{q.response}</p>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
+                                {(() => {
+                                    const relevantSaved = interviewQuestions.filter(q =>
+                                        q.category === 'Technical' &&
+                                        q.response?.trim() &&
+                                        relevantTechnicalIds?.includes(q.id)
+                                    );
+                                    if (isCheckingRelevance) return (
+                                        <div className="mb-5 flex items-center gap-2 text-sm text-taupe">
+                                            <Loader2 className="w-4 h-4 animate-spin" /> Checking saved prep relevance...
+                                        </div>
+                                    );
+                                    if (!relevantSaved.length) return null;
+                                    return (
+                                        <div className="mb-5">
+                                            <h3 className="text-xs font-semibold text-taupe uppercase tracking-wider mb-3">From Your Saved Prep</h3>
+                                            <ul className="space-y-3">
+                                                {relevantSaved.map(q => (
+                                                    <li key={q.id} className="text-sm bg-cream rounded-lg p-3 space-y-1">
+                                                        <p className="font-medium text-ink">{q.question}</p>
+                                                        <p className="text-taupe">{q.response}</p>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    );
+                                })()}
 
                                 {aiQuestions ? (
                                     <div>
@@ -531,9 +559,7 @@ export const JobDetail: React.FC = () => {
                                         </ul>
                                     </div>
                                 ) : (
-                                    !interviewQuestions.filter(q => q.response?.trim()).length && (
-                                        <p className="text-taupe text-sm">Generate potential interview questions based on the job description.</p>
-                                    )
+                                    <p className="text-taupe text-sm">Generate potential interview questions based on the job description.</p>
                                 )}
                             </Card>
 

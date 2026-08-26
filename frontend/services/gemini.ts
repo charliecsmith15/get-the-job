@@ -193,6 +193,35 @@ ${jobDescription}`;
     }
 }
 
+export const getRelevantTechnicalQuestions = async (
+    jobDescription: string,
+    technicalQuestions: { id: string; question: string }[]
+): Promise<string[]> => {
+    if (!technicalQuestions.length) return [];
+
+    const prompt = `You are reviewing saved technical interview questions to determine which are relevant to a specific job role.
+
+Return a JSON array containing ONLY the IDs of questions that are relevant to this job. If none apply, return [].
+
+JOB DESCRIPTION:
+${jobDescription}
+
+SAVED TECHNICAL QUESTIONS:
+${technicalQuestions.map(q => `ID: "${q.id}"\nQuestion: ${q.question}`).join('\n\n')}`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        const parsed = JSON.parse(response.text.trim());
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return technicalQuestions.map(q => q.id);
+    }
+};
+
 export const chatWithCompanion = async (
     message: string,
     history: { role: 'user' | 'model', text: string }[],

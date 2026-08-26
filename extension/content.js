@@ -58,7 +58,7 @@ function capWords(text, max) {
   return words.length <= max ? text : words.slice(0, max).join(' ') + '…';
 }
 
-function extractJobDescription() {
+function extractJobDescription(wordLimit = 500) {
   // 1. JSON-LD description field — strip HTML tags via a temp element
   for (const script of document.querySelectorAll('script[type="application/ld+json"]')) {
     try {
@@ -75,7 +75,7 @@ function extractJobDescription() {
         const tmp = document.createElement('div');
         tmp.innerHTML = posting.description;
         const text = tmp.textContent.replace(/\s+/g, ' ').trim();
-        if (text) return capWords(text, 500);
+        if (text) return capWords(text, wordLimit);
       }
     } catch {}
   }
@@ -86,7 +86,7 @@ function extractJobDescription() {
     const siblings = [...titleH1.parentElement.children];
     const afterTitle = siblings.slice(siblings.indexOf(titleH1) + 1);
     const text = afterTitle.map(el => el.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n').trim();
-    if (text) return capWords(text, 500);
+    if (text) return capWords(text, wordLimit);
   }
 
   return '';
@@ -124,7 +124,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     cleanUrl = u.toString();
   } catch {}
 
-  const params = new URLSearchParams({ url: cleanUrl, utmSource, description: extractJobDescription() });
+  const params = new URLSearchParams({ url: cleanUrl, utmSource, description: extractJobDescription(1000) });
   panel = document.createElement('iframe');
   panel.src = `${chrome.runtime.getURL('popup.html')}?${params}`;
   panel.setAttribute('allowtransparency', 'true');

@@ -7,7 +7,7 @@ export const Sidebar: React.FC = () => {
 
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'chatbot', label: 'AI Companion', icon: MessageSquare },
+        { id: 'chatbot', label: 'Search Assistant', icon: MessageSquare },
         { id: 'jobs', label: 'Job Board', icon: KanbanSquare },
         { id: 'resumes', label: 'Resumes', icon: FileText },
         { id: 'journal', label: 'Search Journal', icon: BookOpen },

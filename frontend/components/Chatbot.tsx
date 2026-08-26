@@ -69,7 +69,7 @@ export const Chatbot: React.FC = () => {
                 <button
                     onClick={() => setIsOpen(true)}
                     className="hidden md:flex fixed bottom-6 right-6 w-14 h-14 bg-brand-600 text-white rounded-full shadow-lg hover:bg-brand-700 hover:scale-105 transition-all items-center justify-center z-50"
-                    title="Chat with AI Companion"
+                    title="Chat with Search Assistant"
                 >
                     <MessageCircle className="w-6 h-6" />
                 </button>
@@ -82,7 +82,7 @@ export const Chatbot: React.FC = () => {
                     <div className="bg-slate-900 text-white p-4 flex justify-between items-center rounded-t-xl">
                         <div className="flex items-center space-x-2">
                             <Bot className="w-5 h-5 text-brand-400" />
-                            <h3 className="font-semibold">Career AI Companion</h3>
+                            <h3 className="font-semibold">Career Search Assistant</h3>
                         </div>
                         <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
                             <X className="w-5 h-5" />

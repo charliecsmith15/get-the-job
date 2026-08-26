@@ -33,7 +33,7 @@ substitutions:
   _GOOGLE_CLIENT_ID: '948539209903-qku75f835du8coue8a6ld6g29aocif8k.apps.googleusercontent.com'
   # Comma-separated list of emails allowed to sign in. Include your demo
   # account's email here once you've created it.
-  _ALLOWED_EMAILS: 'charlie@workbench-data.com,rankin@workbench-data.com'
+  _ALLOWED_EMAILS: 'charlie@workbench-data.com,rankin@workbench-data.com,charlie@charliecsmith.com'
 
 
 options:

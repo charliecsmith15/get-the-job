@@ -30,7 +30,7 @@ BEGIN;
 
 DO $$ BEGIN
   PERFORM set_config('app.charlie_email', 'charlie@workbench-data.com', false);
-  PERFORM set_config('app.demo_email', 'REPLACE_WITH_YOUR_DEMO_ACCOUNT_EMAIL@gmail.com', false);
+  PERFORM set_config('app.demo_email', 'charlie@charliecsmith.com', false);
 END $$;
 
 -- 1. Accounts table -----------------------------------------------------------

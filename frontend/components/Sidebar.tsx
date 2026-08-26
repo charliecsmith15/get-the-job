@@ -1,13 +1,13 @@
 import React from 'react';
 import { useAppStore } from '../store';
-import { LayoutDashboard, KanbanSquare, FileText, Brain, Briefcase, Code2, Database, MessageSquare, BookOpen, MessageCircle, Globe } from 'lucide-react';
+import { LayoutDashboard, KanbanSquare, FileText, Brain, Briefcase, Code2, Database, Bot, BookOpen, MessageCircle, Globe } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
     const { currentView, navigate, dbConfig, syncStatus } = useAppStore();
 
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'chatbot', label: 'Search Assistant', icon: MessageSquare },
+        { id: 'chatbot', label: 'Search Assistant', icon: Bot },
         { id: 'jobs', label: 'Job Board', icon: KanbanSquare },
         { id: 'resumes', label: 'Resumes', icon: FileText },
         { id: 'journal', label: 'Search Journal', icon: BookOpen },

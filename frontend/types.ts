@@ -15,13 +15,17 @@ export interface Job {
     customFields?: Record<string, string>;
 }
 
+export interface PetalAlignment {
+    name: string;
+    summary: string;
+    alignment: 'aligned' | 'not-aligned' | 'unsure';
+}
+
 export interface JobAnalysis {
     id: string;
     jobId: string;
     score: number;
-    pros: string[];
-    cons: string[];
-    fitReason: string[];
+    petals: PetalAlignment[];
     resumeEdits: string[];
     missingExperience: string[];
     createdAt: string;

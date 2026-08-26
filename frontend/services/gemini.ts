@@ -41,11 +41,24 @@ const ai = new GoogleGenAI({
 
 export const analyzeJobMatch = async (jobDescription: string, preferences: Preferences, contextResources: ContextResource[], journalEntries: { date: string; content: string }[], resumeMarkdown: string) => {
     const prompt = `
-    Analyze the following job description against my career profile and context.
+    How does this job align with the user's provided Petals Exercise?
 
     ${buildFoundationalContext(preferences, contextResources, journalEntries, resumeMarkdown)}
 
-    Job Description to Analyze:
+    The Petals Exercise is a career self-assessment from "What Color Is Your Parachute?" with 7 petals. Evaluate the job description against each of the 7 petals below, using the user's Petals Exercise data as the source of truth. For each petal, write a 1-2 sentence summary of how the job aligns (or doesn't), then give a clear rating.
+
+    The 7 petals are:
+    1. People - What kinds of people does the role involve working with?
+    2. Working Conditions - What is the environment, culture, and day-to-day structure like?
+    3. Skills - What transferable skills does the role require and reward?
+    4. Purpose & Values - Does the mission, product, or impact of the role align with the user's sense of purpose?
+    5. Salary & Responsibility - Does the level of seniority, ownership, and likely compensation match what the user wants?
+    6. Geography - Does the location / remote policy match the user's preferences?
+    7. Fields of Interest - Does the domain, industry, or subject matter of the role match the user's interests?
+
+    If the user has not provided a Petals Exercise, do your best based on their resume and other context, and note the absence in your summaries.
+
+    Job Description:
     ${jobDescription}
     `;
 
@@ -60,27 +73,25 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
                     properties: {
                         score: {
                             type: Type.NUMBER,
-                            description: "A match score from 0 to 100 based on how well the job fits the preferences and context."
+                            description: "An overall alignment score from 0 to 100 derived from the petal ratings. 'aligned' petals count fully, 'unsure' count half, 'not-aligned' count zero."
                         },
-                        pros: {
+                        petals: {
                             type: Type.ARRAY,
-                            items: { type: Type.STRING },
-                            description: "List of 3-5 reasons this job is a good match based on the user's background and career profile."
-                        },
-                        cons: {
-                            type: Type.ARRAY,
-                            items: { type: Type.STRING },
-                            description: "List of 1-3 potential red flags or mismatches based on the user's career profile and dealbreakers."
-                        },
-                        fitReason: {
-                            type: Type.ARRAY,
-                            items: { type: Type.STRING },
-                            description: "3-5 bullet points explaining why this person is a good fit for this specific role. Each bullet should be a concise, complete sentence referencing their background, skills, or career profile directly."
+                            description: "One entry per petal, in the order listed in the prompt.",
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    name: { type: Type.STRING, description: "The petal name, e.g. 'People'" },
+                                    summary: { type: Type.STRING, description: "1-2 sentence explanation of how this job aligns with the user's preferences for this petal." },
+                                    alignment: { type: Type.STRING, description: "One of: aligned, not-aligned, unsure" }
+                                },
+                                required: ["name", "summary", "alignment"]
+                            }
                         },
                         resumeEdits: {
                             type: Type.ARRAY,
                             items: { type: Type.STRING },
-                            description: "3-5 general resume improvement suggestions to help this person stand out for this type of role. Keep suggestions high-level and directional (e.g. 'Emphasize leadership experience', 'Highlight data-driven outcomes') rather than prescribing specific line edits."
+                            description: "3-5 general resume improvement suggestions to help this person stand out for this type of role. Keep suggestions high-level and directional rather than prescribing specific line edits."
                         },
                         missingExperience: {
                             type: Type.ARRAY,
@@ -88,7 +99,7 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
                             description: "3-5 specific qualifications, skills, or experiences that the job description requires or strongly prefers that are absent or underrepresented in the candidate's background. Be direct and specific."
                         }
                     },
-                    required: ["score", "pros", "cons", "fitReason", "resumeEdits", "missingExperience"]
+                    required: ["score", "petals", "resumeEdits", "missingExperience"]
                 }
             }
         });

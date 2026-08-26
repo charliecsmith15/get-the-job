@@ -13,7 +13,7 @@ export const Chatbot: React.FC = () => {
     const store = useAppStore();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<ChatMessage[]>([
-        { role: 'model', text: "Hi! I'm your Get the Job AI companion. I have access to your job board, preferences, and notes. How can I help you with your job search today?" }
+        { role: 'model', text: "Hello, place any question about your job search here." }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);

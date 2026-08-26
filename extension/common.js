@@ -77,10 +77,12 @@ export function buildJobPayload(fields) {
   };
 }
 
-export async function createJob(backendUrl, job) {
+export async function createJob(backendUrl, job, idToken) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
   const res = await fetch(`${backendUrl}/jobs`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(job),
   });
   if (!res.ok) {

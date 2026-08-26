@@ -108,7 +108,12 @@ async function init() {
     statusEl.textContent = 'Saving…';
     statusEl.className = '';
     try {
-      await createJob(settings.backendUrl, job);
+      const idToken = await new Promise((resolve, reject) =>
+        chrome.identity.getAuthToken({ interactive: false }, (token) =>
+          chrome.runtime.lastError ? reject(chrome.runtime.lastError) : resolve(token)
+        )
+      );
+      await createJob(settings.backendUrl, job, idToken);
       statusEl.textContent = 'Saved to Get the Job!';
       statusEl.className = 'ok';
       setTimeout(closePanel, 900);

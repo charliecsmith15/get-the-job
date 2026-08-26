@@ -380,8 +380,8 @@ export const JobDetail: React.FC = () => {
 
                 {/* NOTES TAB */}
                 {activeTab === 'notes' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 space-y-4">
+                    <div className="space-y-6">
+                        <div className="space-y-4">
                             {jobNotes.length === 0 ? (
                                 <Card className="p-8 text-center text-taupe">No notes yet. Add one to track your progress!</Card>
                             ) : (
@@ -403,35 +403,33 @@ export const JobDetail: React.FC = () => {
                                 ))
                             )}
                         </div>
-                        <div>
-                            <Card className="p-4 sticky top-6">
-                                <h3 className="font-semibold text-ink mb-4">Add Note</h3>
-                                <div className="space-y-3">
-                                    <select 
-                                        className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
-                                        value={newNote.type}
-                                        onChange={e => setNewNote({...newNote, type: e.target.value as any})}
-                                    >
-                                        <option value="General">General Note</option>
-                                        <option value="Call">Call Notes</option>
-                                        <option value="Interview">Interview Prep/Notes</option>
-                                        <option value="Assignment">Take-home Assignment</option>
-                                    </select>
-                                    <Input 
-                                        placeholder="Note Title" 
-                                        value={newNote.title}
-                                        onChange={e => setNewNote({...newNote, title: e.target.value})}
-                                    />
-                                    <Textarea 
-                                        rows={4} 
-                                        placeholder="Write your note body here..." 
-                                        value={newNote.content}
-                                        onChange={e => setNewNote({...newNote, content: e.target.value})}
-                                    />
-                                    <Button className="w-full" onClick={handleAddNote} disabled={!newNote.title.trim() || !newNote.content.trim()}>Save Note</Button>
-                                </div>
-                            </Card>
-                        </div>
+                        <Card className="p-6">
+                            <h3 className="font-semibold text-ink mb-4">Add Note</h3>
+                            <div className="space-y-3">
+                                <select
+                                    className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
+                                    value={newNote.type}
+                                    onChange={e => setNewNote({...newNote, type: e.target.value as any})}
+                                >
+                                    <option value="General">General Note</option>
+                                    <option value="Call">Call Notes</option>
+                                    <option value="Interview">Interview Prep/Notes</option>
+                                    <option value="Assignment">Take-home Assignment</option>
+                                </select>
+                                <Input
+                                    placeholder="Note Title"
+                                    value={newNote.title}
+                                    onChange={e => setNewNote({...newNote, title: e.target.value})}
+                                />
+                                <Textarea
+                                    rows={8}
+                                    placeholder="Write your note body here..."
+                                    value={newNote.content}
+                                    onChange={e => setNewNote({...newNote, content: e.target.value})}
+                                />
+                                <Button className="w-full" onClick={handleAddNote} disabled={!newNote.title.trim() || !newNote.content.trim()}>Save Note</Button>
+                            </div>
+                        </Card>
                     </div>
                 )}
 

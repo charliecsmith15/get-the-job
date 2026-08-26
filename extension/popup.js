@@ -58,6 +58,11 @@ async function init() {
       document.getElementById('url').value = tab.url || '';
       if (tab.utmSource) document.getElementById('source').value = normalizeSource(tab.utmSource);
       if (tab.description) document.getElementById('description').value = tab.description;
+      try {
+        const host = new URL(tab.url).hostname.replace(/^www\./, '');
+        const name = host.split('.')[0];
+        document.getElementById('company').value = name.charAt(0).toUpperCase() + name.slice(1);
+      } catch {}
     }
 
     showState('form');

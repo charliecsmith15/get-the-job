@@ -42,7 +42,7 @@ export const SourcesView: React.FC = () => {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-ink flex items-center gap-2">
-                        <Globe className="w-6 h-6 text-wood" /> Sources
+                        <Globe className="w-6 h-6 text-wood" /> Job Sites
                     </h1>
                     <p className="text-taupe text-sm mt-1">Job sites and boards you're actively using in your search.</p>
                 </div>

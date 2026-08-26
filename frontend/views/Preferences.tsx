@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Textarea, Input } from '../components/UI';
-import { Settings, Save, Info, BookOpen, Plus, Trash2, HardDrive } from 'lucide-react';
+import { Brain, Save, Info, BookOpen, Plus, Trash2, HardDrive } from 'lucide-react';
 
 export const PreferencesView: React.FC = () => {
     const { preferences, updatePreferences, contextResources, addContextResource, deleteContextResource } = useAppStore();
@@ -84,7 +84,7 @@ export const PreferencesView: React.FC = () => {
         <div className="max-w-4xl mx-auto crm-enter pb-12">
             <div className="mb-8">
                 <h1 className="text-2xl font-bold text-ink flex items-center">
-                    <Settings className="w-6 h-6 mr-2 text-wood" />
+                    <Brain className="w-6 h-6 mr-2 text-wood" />
                     Context
                 </h1>
                 <p className="text-taupe mt-2">

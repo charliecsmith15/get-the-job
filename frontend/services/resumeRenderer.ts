@@ -33,8 +33,6 @@ export function renderResumeMarkdown(
             const block = textBlocks.find(t => t.sectionId === section.id);
             const content = block?.content?.trim();
             if (!content) continue;
-            // The 'header' section is the resume's name/contact block — it
-            // sits at the top with no section heading of its own.
             parts.push(section.id === 'header' ? content : `## ${section.label}\n\n${content}`);
             continue;
         }
@@ -42,15 +40,30 @@ export function renderResumeMarkdown(
         if (section.type === 'entries') {
             const sectionEntries = byOrder(entries.filter(e => e.sectionId === section.id));
             const entryBlocks: string[] = [];
+
             for (const entry of sectionEntries) {
+                if (section.id === 'education') {
+                    // Education: school name + degree only, no dates or bullets required
+                    const educParts = [entry.heading, entry.subheading].filter(Boolean);
+                    entryBlocks.push(educParts.join('\n'));
+                    continue;
+                }
+
+                // Experience and other entries-type sections
                 const entryLines = byOrder(lines.filter(l => l.sectionId === section.id && l.entryId === entry.id))
                     .filter(l => !includedLineIds || includedLineIds.has(l.id));
-                if (!entryLines.length) continue; // drop entries left with zero included lines
+                if (!entryLines.length) continue;
+
                 const dateRange = [entry.startDate, entry.endDate].filter(Boolean).join(' – ');
                 const heading = [entry.heading, entry.subheading].filter(Boolean).join(', ');
-                const headingLine = dateRange ? `**${heading}** (${dateRange})` : `**${heading}**`;
-                entryBlocks.push([headingLine, ...entryLines.map(l => `- ${l.content}`)].join('\n'));
+                // ||| is the two-column separator: left = company+title bold, right = dates
+                const headerLine = dateRange ? `**${heading}** ||| ${dateRange}` : `**${heading}**`;
+                const blockLines = [headerLine];
+                if (entry.location) blockLines.push(`:: ${entry.location}`);
+                blockLines.push(...entryLines.map(l => `- ${l.content}`));
+                entryBlocks.push(blockLines.join('\n'));
             }
+
             if (entryBlocks.length) parts.push(`## ${section.label}\n\n${entryBlocks.join('\n\n')}`);
             continue;
         }
@@ -58,7 +71,8 @@ export function renderResumeMarkdown(
         if (section.type === 'list') {
             const sectionLines = byOrder(lines.filter(l => l.sectionId === section.id && !l.entryId))
                 .filter(l => !includedLineIds || includedLineIds.has(l.id));
-            if (sectionLines.length) parts.push(`## ${section.label}\n\n${sectionLines.map(l => l.content).join(', ')}`);
+            // Each line on its own line (not comma-joined) to preserve Category: items format
+            if (sectionLines.length) parts.push(`## ${section.label}\n\n${sectionLines.map(l => l.content).join('\n')}`);
         }
     }
 

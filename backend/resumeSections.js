@@ -21,14 +21,14 @@
 export const RESUME_SECTIONS = [
   { id: 'header', label: 'Contact Info', type: 'text', order: 0 },
   { id: 'summary', label: 'Summary', type: 'text', order: 1 },
-  { id: 'experience', label: 'Experience', type: 'entries', order: 2 },
+  { id: 'experience', label: 'Professional Experience', type: 'entries', order: 2 },
   { id: 'education', label: 'Education', type: 'entries', order: 3 },
-  { id: 'skills', label: 'Skills', type: 'list', order: 4 },
+  { id: 'skills', label: 'Additional Information', type: 'list', order: 4 },
 ];
 
 // Rough one-page approximation used as the hard backstop when trimming a
 // generated resume to fit — see selectResumeLines()/trimToBudget() on the
 // frontend.
-export const TOTAL_CHAR_BUDGET = 4000;
+export const TOTAL_CHAR_BUDGET = 8000;
 
 export const getSection = (sectionId) => RESUME_SECTIONS.find(s => s.id === sectionId);

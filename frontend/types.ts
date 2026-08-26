@@ -57,6 +57,7 @@ export interface ResumeEntry {
     sectionId: string;
     heading: string;
     subheading?: string;
+    location?: string;
     startDate?: string;
     endDate?: string;
     order: number;

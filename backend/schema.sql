@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS resume_entries (
     subheading VARCHAR(255),
     "startDate" VARCHAR(50),
     "endDate" VARCHAR(50),
+    location VARCHAR(255),
     "order" INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS resume_entries_account_idx ON resume_entries ("accountId");
@@ -156,6 +157,8 @@ CREATE INDEX IF NOT EXISTS job_analyses_account_idx ON job_analyses ("accountId"
 -- ALTER TABLE preferences ADD COLUMN IF NOT EXISTS "linkedInProfile" TEXT;
 -- ALTER TABLE jobs ADD COLUMN IF NOT EXISTS source VARCHAR(255);
 -- CREATE TABLE IF NOT EXISTS job_analyses (...) — run the block above on existing instances.
+--
+-- ALTER TABLE resume_entries ADD COLUMN IF NOT EXISTS location VARCHAR(255);
 --
 -- Accounts migration (existing databases only): see backend/migrate_to_accounts.sql.
 -- Do not hand-run the "accountId" columns above against a database that

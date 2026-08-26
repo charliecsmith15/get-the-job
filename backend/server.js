@@ -564,9 +564,9 @@ app.post('/api/resume/entries', async (req, res) => {
     const section = getSection(en.sectionId);
     if (!section || section.type !== 'entries') return res.status(400).json({ error: 'Unknown entries section' });
     await pool.query(
-      `INSERT INTO resume_entries (id, "accountId", "sectionId", heading, subheading, "startDate", "endDate", "order")
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
-      [en.id, req.accountId, en.sectionId, en.heading || null, en.subheading || null, en.startDate || null, en.endDate || null, en.order ?? 0]
+      `INSERT INTO resume_entries (id, "accountId", "sectionId", heading, subheading, "startDate", "endDate", location, "order")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+      [en.id, req.accountId, en.sectionId, en.heading || null, en.subheading || null, en.startDate || null, en.endDate || null, en.location || null, en.order ?? 0]
     );
     res.status(201).json(en);
   } catch (e) { dbError(res, e); }
@@ -575,8 +575,8 @@ app.put('/api/resume/entries/:id', async (req, res) => {
   try {
     const en = req.body;
     await pool.query(
-      `UPDATE resume_entries SET heading=$3, subheading=$4, "startDate"=$5, "endDate"=$6, "order"=$7 WHERE id=$1 AND "accountId"=$2`,
-      [req.params.id, req.accountId, en.heading || null, en.subheading || null, en.startDate || null, en.endDate || null, en.order ?? 0]
+      `UPDATE resume_entries SET heading=$3, subheading=$4, "startDate"=$5, "endDate"=$6, location=$7, "order"=$8 WHERE id=$1 AND "accountId"=$2`,
+      [req.params.id, req.accountId, en.heading || null, en.subheading || null, en.startDate || null, en.endDate || null, en.location || null, en.order ?? 0]
     );
     res.status(204).end();
   } catch (e) { dbError(res, e); }

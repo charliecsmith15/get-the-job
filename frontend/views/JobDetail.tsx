@@ -184,7 +184,12 @@ export const JobDetail: React.FC = () => {
 
     const handleExportGeneratedResume = (format: DownloadFormat) => {
         if (!generatedMarkdown) return;
-        downloadResume(generatedMarkdown, `${job.company}_tailored_resume`, format);
+        downloadResume(
+            generatedMarkdown,
+            `${job.company}_tailored_resume`,
+            format,
+            { sections: resumeSections, textBlocks: resumeTextBlocks, entries: resumeEntries, lines: resumeLines, includedLineIds }
+        );
         setShowDownloadMenu(false);
     };
 

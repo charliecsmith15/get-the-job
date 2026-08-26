@@ -3,22 +3,22 @@ import { useAppStore } from '../store';
 import { Card, Button, Input, Textarea } from './UI';
 import { Plus, Trash2 } from 'lucide-react';
 
-// Config-driven resume section editor. Sections/labels/types always come
-// from the backend (store.resumeSections) — this component never
-// hardcodes a section list, so adding/renaming a section on the backend
-// just works here without a code change.
-//
-// mode="baseline": the single-resume editor (Resume view) — edits the
-// baseline content (jobId=null) that's always a generation candidate.
-// mode="job": the per-job "additional lines" editor (JobDetail) — only
-// adds/removes lines scoped to one job application; baseline entries and
-// lines are shown read-only for context, never edited here.
 interface ResumeSectionFormProps {
     mode: 'baseline' | 'job';
     jobId?: string;
 }
 
+const BULLET_MAX = 110;
+const SUMMARY_MAX = 500;
+
 const byOrder = <T extends { order: number }>(items: T[]): T[] => [...items].sort((a, b) => a.order - b.order);
+
+// Character counter shown next to bullet line inputs
+const CharCount: React.FC<{ count: number; max: number }> = ({ count, max }) => (
+    <span className={`text-xs ml-1 tabular-nums ${count > max ? 'text-red-500 font-semibold' : 'text-taupe'}`}>
+        {count}/{max}
+    </span>
+);
 
 export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobId }) => {
     const {
@@ -34,6 +34,7 @@ export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobI
         const key = draftKey(sectionId, entryId);
         const content = (newLineDrafts[key] || '').trim();
         if (!content) return;
+        if (entryId && content.length > BULLET_MAX) return; // block save if over limit
         const siblingLines = resumeLines.filter(l => l.sectionId === sectionId && (l.entryId ?? undefined) === entryId);
         await addResumeLine({
             sectionId,
@@ -47,10 +48,9 @@ export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobI
 
     const handleAddEntry = async (sectionId: string) => {
         const siblingEntries = resumeEntries.filter(e => e.sectionId === sectionId);
-        const newEntry = await addResumeEntry({
-            sectionId, heading: 'New entry', subheading: '', startDate: '', endDate: '', order: siblingEntries.length,
+        return addResumeEntry({
+            sectionId, heading: 'New entry', subheading: '', location: '', startDate: '', endDate: '', order: siblingEntries.length,
         });
-        return newEntry;
     };
 
     const sections = byOrder(resumeSections);
@@ -75,6 +75,8 @@ export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobI
                                         const baselineLines = byOrder(resumeLines.filter(l => l.sectionId === section.id && l.entryId === entry.id && !l.jobId));
                                         const jobLines = byOrder(resumeLines.filter(l => l.sectionId === section.id && l.entryId === entry.id && l.jobId === jobId));
                                         const key = draftKey(section.id, entry.id);
+                                        const draft = newLineDrafts[key] || '';
+                                        const isExperience = section.id !== 'education';
                                         return (
                                             <Card key={entry.id} className="p-4">
                                                 <p className="text-sm font-medium text-ink">{[entry.heading, entry.subheading].filter(Boolean).join(', ')}</p>
@@ -93,16 +95,24 @@ export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobI
                                                         ))}
                                                     </ul>
                                                 )}
-                                                <div className="mt-2 flex space-x-2">
-                                                    <input
-                                                        className="flex-1 px-2 py-1 border border-sand rounded text-xs bg-paper text-ink crm-focus"
-                                                        placeholder="Add a line for this job..."
-                                                        value={newLineDrafts[key] || ''}
-                                                        onChange={e => setNewLineDrafts(prev => ({ ...prev, [key]: e.target.value }))}
-                                                        onKeyDown={e => e.key === 'Enter' && handleAddLine(section.id, entry.id, true)}
-                                                    />
-                                                    <Button variant="ghost" onClick={() => handleAddLine(section.id, entry.id, true)}><Plus className="w-4 h-4" /></Button>
-                                                </div>
+                                                {isExperience && (
+                                                    <div className="mt-2">
+                                                        <div className="flex space-x-2">
+                                                            <input
+                                                                className={`flex-1 px-2 py-1 border rounded text-xs bg-paper text-ink crm-focus ${draft.length > BULLET_MAX ? 'border-red-400' : 'border-sand'}`}
+                                                                placeholder="Add a line for this job..."
+                                                                value={draft}
+                                                                onChange={e => setNewLineDrafts(prev => ({ ...prev, [key]: e.target.value }))}
+                                                                onKeyDown={e => e.key === 'Enter' && handleAddLine(section.id, entry.id, true)}
+                                                            />
+                                                            <Button variant="ghost" onClick={() => handleAddLine(section.id, entry.id, true)} disabled={draft.length > BULLET_MAX}><Plus className="w-4 h-4" /></Button>
+                                                        </div>
+                                                        <CharCount count={draft.length} max={BULLET_MAX} />
+                                                        {draft.length > BULLET_MAX && (
+                                                            <p className="text-xs text-red-500 mt-1">Max {BULLET_MAX} characters — shorten before adding</p>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </Card>
                                         );
                                     })}
@@ -148,18 +158,27 @@ export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobI
             {sections.map(section => {
                 if (section.type === 'text') {
                     const block = resumeTextBlocks.find(t => t.sectionId === section.id);
+                    const content = block?.content || '';
+                    const isSummary = section.id === 'summary';
                     return (
-                        <Textarea
-                            key={section.id}
-                            label={section.label}
-                            rows={section.id === 'header' ? 3 : 6}
-                            value={block?.content || ''}
-                            onChange={e => updateResumeText(section.id, e.target.value)}
-                        />
+                        <div key={section.id}>
+                            <Textarea
+                                label={section.label}
+                                rows={section.id === 'header' ? 3 : 6}
+                                value={content}
+                                onChange={e => updateResumeText(section.id, e.target.value)}
+                            />
+                            {isSummary && (
+                                <p className={`text-xs mt-1 text-right ${content.length > SUMMARY_MAX ? 'text-red-500 font-semibold' : 'text-taupe'}`}>
+                                    {content.length}/{SUMMARY_MAX} characters
+                                </p>
+                            )}
+                        </div>
                     );
                 }
 
                 if (section.type === 'entries') {
+                    const isExperience = section.id !== 'education';
                     const sectionEntries = byOrder(resumeEntries.filter(e => e.sectionId === section.id));
                     return (
                         <div key={section.id}>
@@ -171,41 +190,63 @@ export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobI
                                 {sectionEntries.map(entry => {
                                     const entryLines = byOrder(resumeLines.filter(l => l.sectionId === section.id && l.entryId === entry.id && !l.jobId));
                                     const key = draftKey(section.id, entry.id);
+                                    const draft = newLineDrafts[key] || '';
                                     return (
                                         <Card key={entry.id} className="p-4">
                                             <div className="flex justify-between items-start gap-2 mb-3">
-                                                <div className="grid grid-cols-2 gap-2 flex-1">
-                                                    <Input placeholder="Heading (e.g. Senior Engineer)" value={entry.heading} onChange={e => updateResumeEntry(entry.id, { heading: e.target.value })} />
-                                                    <Input placeholder="Subheading (e.g. Acme Corp)" value={entry.subheading || ''} onChange={e => updateResumeEntry(entry.id, { subheading: e.target.value })} />
-                                                    <Input placeholder="Start date" value={entry.startDate || ''} onChange={e => updateResumeEntry(entry.id, { startDate: e.target.value })} />
-                                                    <Input placeholder="End date" value={entry.endDate || ''} onChange={e => updateResumeEntry(entry.id, { endDate: e.target.value })} />
+                                                <div className="flex flex-col gap-2 flex-1">
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <Input placeholder="Company" value={entry.heading} onChange={e => updateResumeEntry(entry.id, { heading: e.target.value })} />
+                                                        <Input placeholder="Title" value={entry.subheading || ''} onChange={e => updateResumeEntry(entry.id, { subheading: e.target.value })} />
+                                                    </div>
+                                                    {isExperience && (
+                                                        <>
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <Input placeholder="Start date (e.g. Jan 2022)" value={entry.startDate || ''} onChange={e => updateResumeEntry(entry.id, { startDate: e.target.value })} />
+                                                                <Input placeholder="End date (e.g. Mar 2024 or Present)" value={entry.endDate || ''} onChange={e => updateResumeEntry(entry.id, { endDate: e.target.value })} />
+                                                            </div>
+                                                            <Input placeholder="Location (e.g. New York, NY)" value={entry.location || ''} onChange={e => updateResumeEntry(entry.id, { location: e.target.value })} />
+                                                        </>
+                                                    )}
                                                 </div>
                                                 <button onClick={() => { if (confirm('Delete this entry and its lines?')) deleteResumeEntry(entry.id); }} className="text-taupe hover:text-danger p-1">
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
-                                            <ul className="space-y-1">
-                                                {entryLines.map(l => (
-                                                    <li key={l.id} className="flex items-center space-x-2">
-                                                        <input
-                                                            className="flex-1 px-2 py-1 border border-sand rounded text-xs bg-paper text-ink crm-focus"
-                                                            value={l.content}
-                                                            onChange={e => updateResumeLine(l.id, { content: e.target.value })}
-                                                        />
-                                                        <button onClick={() => deleteResumeLine(l.id)} className="text-taupe hover:text-danger"><Trash2 className="w-3 h-3" /></button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                            <div className="mt-2 flex space-x-2">
-                                                <input
-                                                    className="flex-1 px-2 py-1 border border-sand rounded text-xs bg-paper text-ink crm-focus"
-                                                    placeholder="Add a bullet line..."
-                                                    value={newLineDrafts[key] || ''}
-                                                    onChange={e => setNewLineDrafts(prev => ({ ...prev, [key]: e.target.value }))}
-                                                    onKeyDown={e => e.key === 'Enter' && handleAddLine(section.id, entry.id, false)}
-                                                />
-                                                <Button variant="ghost" onClick={() => handleAddLine(section.id, entry.id, false)}><Plus className="w-4 h-4" /></Button>
-                                            </div>
+                                            {isExperience && (
+                                                <>
+                                                    <ul className="space-y-1">
+                                                        {entryLines.map(l => (
+                                                            <li key={l.id} className="flex items-center space-x-2">
+                                                                <input
+                                                                    className="flex-1 px-2 py-1 border border-sand rounded text-xs bg-paper text-ink crm-focus"
+                                                                    value={l.content}
+                                                                    maxLength={BULLET_MAX}
+                                                                    onChange={e => updateResumeLine(l.id, { content: e.target.value })}
+                                                                />
+                                                                <CharCount count={l.content.length} max={BULLET_MAX} />
+                                                                <button onClick={() => deleteResumeLine(l.id)} className="text-taupe hover:text-danger"><Trash2 className="w-3 h-3" /></button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                    <div className="mt-2">
+                                                        <div className="flex space-x-2">
+                                                            <input
+                                                                className={`flex-1 px-2 py-1 border rounded text-xs bg-paper text-ink crm-focus ${draft.length > BULLET_MAX ? 'border-red-400' : 'border-sand'}`}
+                                                                placeholder="Add a bullet line..."
+                                                                value={draft}
+                                                                onChange={e => setNewLineDrafts(prev => ({ ...prev, [key]: e.target.value }))}
+                                                                onKeyDown={e => e.key === 'Enter' && handleAddLine(section.id, entry.id, false)}
+                                                            />
+                                                            <Button variant="ghost" onClick={() => handleAddLine(section.id, entry.id, false)} disabled={draft.length > BULLET_MAX}><Plus className="w-4 h-4" /></Button>
+                                                        </div>
+                                                        <CharCount count={draft.length} max={BULLET_MAX} />
+                                                        {draft.length > BULLET_MAX && (
+                                                            <p className="text-xs text-red-500 mt-1">Max {BULLET_MAX} characters — shorten before adding</p>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
                                         </Card>
                                     );
                                 })}

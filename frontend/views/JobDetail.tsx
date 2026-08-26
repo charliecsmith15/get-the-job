@@ -527,14 +527,7 @@ export const JobDetail: React.FC = () => {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Additional lines for this job */}
-                            <Card className="p-6">
-                                <h2 className="text-lg font-semibold text-ink mb-2">Additional Resume Lines</h2>
-                                <p className="text-taupe text-sm mb-4">Add extra bullet points specific to this job application. The AI decides whether to include them alongside your baseline resume when generating below.</p>
-                                <ResumeSectionForm mode="job" jobId={job.id} />
-                            </Card>
-
+                        <div className="space-y-6">
                             {/* Resume Tailoring */}
                             <Card className="p-6">
                                 <div className="flex justify-between items-center mb-4">

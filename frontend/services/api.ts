@@ -96,7 +96,7 @@ export const createApiClient = (baseUrl: string) => {
         updateResume: (id: string, resume: Partial<Resume>): Promise<void> => fetch(`${baseUrl}/resumes/${id}`, { method: 'PUT', headers, body: JSON.stringify(resume) }).then(handleResponse),
         deleteResume: (id: string): Promise<void> => fetch(`${baseUrl}/resumes/${id}`, { method: 'DELETE' }).then(handleResponse),
         
-        // Context Resources
+        // Additional Context
         getContextResources: (): Promise<ContextResource[]> => fetch(`${baseUrl}/context`).then(handleResponse),
         createContextResource: (resource: ContextResource): Promise<void> => fetch(`${baseUrl}/context`, { method: 'POST', headers, body: JSON.stringify(resource) }).then(handleResponse),
         deleteContextResource: (id: string): Promise<void> => fetch(`${baseUrl}/context/${id}`, { method: 'DELETE' }).then(handleResponse),

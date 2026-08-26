@@ -82,7 +82,7 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
     );
 };
 
-export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string }> = ({ label, className = '', ...props }) => (
+export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: React.ReactNode }> = ({ label, className = '', ...props }) => (
     <div className="w-full">
         {label && <label className="block text-sm font-medium text-ink mb-1">{label}</label>}
         <input
@@ -92,7 +92,7 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
     </div>
 );
 
-export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }> = ({ label, className = '', ...props }) => (
+export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: React.ReactNode }> = ({ label, className = '', ...props }) => (
     <div className="w-full">
         {label && <label className="block text-sm font-medium text-ink mb-1">{label}</label>}
         <textarea

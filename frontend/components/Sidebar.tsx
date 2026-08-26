@@ -13,7 +13,7 @@ export const Sidebar: React.FC = () => {
         { id: 'journal', label: 'Search Journal', icon: BookOpen },
         { id: 'interview-prep', label: 'Interview Prep', icon: MessageCircle },
         { id: 'sources', label: 'Sources', icon: Globe },
-        { id: 'preferences', label: 'Preferences & Context', icon: Settings },
+        { id: 'preferences', label: 'Context', icon: Settings },
         { id: 'developer', label: 'Developer API & DB', icon: Code2 },
     ];
 

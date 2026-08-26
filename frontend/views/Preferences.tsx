@@ -85,7 +85,7 @@ export const PreferencesView: React.FC = () => {
             <div className="mb-8">
                 <h1 className="text-2xl font-bold text-ink flex items-center">
                     <Settings className="w-6 h-6 mr-2 text-wood" />
-                    Preferences & Context
+                    Context
                 </h1>
                 <p className="text-taupe mt-2">
                     Define what you are looking for. This context is used by the AI to qualify job opportunities and calculate match scores.
@@ -101,7 +101,7 @@ export const PreferencesView: React.FC = () => {
 
                 <div className="space-y-6">
                     <Textarea
-                        label="Completed Petals Exercise"
+                        label={<>Completed Petals Exercise <a href="https://parachutebook.com/" target="_blank" rel="noreferrer" className="font-normal text-wood hover:underline">Taken from the Career Search Book, What Color is Your Parachute</a></>}
                         rows={16}
                         placeholder="Paste your completed Petals Exercise here. This is your single source of truth for what your ideal job looks like — the AI will use this as context when analysing job matches and answering questions."
                         value={form.petalsExercise}
@@ -129,13 +129,13 @@ export const PreferencesView: React.FC = () => {
                 </div>
             </Card>
 
-            {/* Context Resources Section */}
+            {/* Additional Context Section */}
             <div>
                 <div className="flex justify-between items-center mb-6">
                     <div>
                         <h2 className="text-xl font-bold text-ink flex items-center">
                             <BookOpen className="w-5 h-5 mr-2 text-wood" />
-                            Context Resources
+                            Additional Context
                         </h2>
                         <p className="text-taupe text-sm mt-1">
                             Add free-form notes, documents, or criteria that further define your ideal job.

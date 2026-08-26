@@ -13,7 +13,8 @@ interface ChatMessage {
 export const ChatbotView: React.FC = () => {
     const store = useAppStore();
     const [messages, setMessages] = useState<ChatMessage[]>([
-        { role: 'model', text: "Hi! I'm your personalized Job Search Assistant. How can I help you with your job search today?" }
+        { role: 'model', text: "Hi! I'm your personalized Job Search Assistant." },
+        { role: 'model', text: "I have access to the information shared in this app and am here to help with your search. How can I help?" }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);

@@ -19,7 +19,7 @@ steps:
           --platform managed \
           --allow-unauthenticated \
           --port 8080 \
-          --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION},GOOGLE_CLIENT_ID=948539209903-qku75f835du8coue8a6ld6g29aocif8k.apps.googleusercontent.com,GOOGLE_API_KEY=${_GOOGLE_API_KEY},BACKEND_URL=${_BACKEND_URL}"
+          --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION},GOOGLE_CLIENT_ID=948539209903-qku75f835du8coue8a6ld6g29aocif8k.apps.googleusercontent.com,GOOGLE_API_KEY=${_GOOGLE_API_KEY},BACKEND_URL=${_BACKEND_URL},ALLOWED_EMAILS=${_ALLOWED_EMAILS}"
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus'
@@ -28,6 +28,11 @@ substitutions:
   _GOOGLE_CLOUD_LOCATION: us-central1
   _GOOGLE_API_KEY: ''
   _BACKEND_URL: ''
+  # Must match backend/cloudbuild.yaml's _ALLOWED_EMAILS exactly — this only
+  # gates the sign-in screen client-side; the backend enforces the same list
+  # server-side on every request. Add your demo account's email here once
+  # you've created it.
+  _ALLOWED_EMAILS: 'charlie@workbench-data.com,rankin@workbench-data.com'
 
 options:
   logging: CLOUD_LOGGING_ONLY

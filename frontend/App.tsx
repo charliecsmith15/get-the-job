@@ -13,6 +13,7 @@ import { JournalView } from './views/Journal';
 import { InterviewPrepView } from './views/InterviewPrep';
 import { SourcesView } from './views/Sources';
 import { MobileNav } from './components/MobileNav';
+import { ID_TOKEN_STORAGE_KEY } from './services/api';
 
 const ALLOWED_EMAILS = (process.env.ALLOWED_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
 
@@ -53,12 +54,19 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     useEffect(() => {
         const saved = sessionStorage.getItem('getthejob_auth');
-        setAuthState(saved && ALLOWED_EMAILS.includes(saved) ? 'authorized' : 'unauthenticated');
+        const savedToken = sessionStorage.getItem(ID_TOKEN_STORAGE_KEY);
+        setAuthState(saved && savedToken && ALLOWED_EMAILS.includes(saved) ? 'authorized' : 'unauthenticated');
     }, []);
 
-    const handleSignIn = useCallback((email: string) => {
+    // ALLOWED_EMAILS here is a client-side UX shortcut only (skip the
+    // network round trip for an obviously-wrong account). The backend
+    // verifies the ID token and re-checks its own ALLOWED_EMAILS on every
+    // request — that's the real access control. Keep both lists in sync
+    // when adding an account (e.g. your demo account's email).
+    const handleSignIn = useCallback((email: string, idToken: string) => {
         if (ALLOWED_EMAILS.includes(email)) {
             sessionStorage.setItem('getthejob_auth', email);
+            sessionStorage.setItem(ID_TOKEN_STORAGE_KEY, idToken);
             setAuthState('authorized');
         } else {
             setAuthState('denied');

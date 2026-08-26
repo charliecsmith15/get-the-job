@@ -119,7 +119,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     const u = new URL(location.href);
     utmSource = u.searchParams.get('utm_source') || u.searchParams.get('src') || '';
     for (const key of [...u.searchParams.keys()]) {
-      if (key.startsWith('utm_')) u.searchParams.delete(key);
+      if (key.startsWith('utm_') || key === 'src') u.searchParams.delete(key);
     }
     cleanUrl = u.toString();
   } catch {}

@@ -32,7 +32,7 @@ substitutions:
   # gates the sign-in screen client-side; the backend enforces the same list
   # server-side on every request. Add your demo account's email here once
   # you've created it.
-  _ALLOWED_EMAILS: 'charlie@workbench-data.com,rankin@workbench-data.com'
+  _ALLOWED_EMAILS: 'charlie@workbench-data.com,rankin@workbench-data.com,charlie@charliecsmith.com'
 
 options:
   logging: CLOUD_LOGGING_ONLY

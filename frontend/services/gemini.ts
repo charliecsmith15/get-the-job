@@ -81,9 +81,14 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
                             type: Type.ARRAY,
                             items: { type: Type.STRING },
                             description: "3-5 general resume improvement suggestions to help this person stand out for this type of role. Keep suggestions high-level and directional (e.g. 'Emphasize leadership experience', 'Highlight data-driven outcomes') rather than prescribing specific line edits."
+                        },
+                        missingExperience: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING },
+                            description: "3-5 specific qualifications, skills, or experiences that the job description requires or strongly prefers that are absent or underrepresented in the candidate's background. Be direct and specific."
                         }
                     },
-                    required: ["score", "pros", "cons", "fitReason", "resumeEdits"]
+                    required: ["score", "pros", "cons", "fitReason", "resumeEdits", "missingExperience"]
                 }
             }
         });

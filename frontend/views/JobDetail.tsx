@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Badge, Textarea, Input, renderBold, renderMarkdown } from '../components/UI';
-import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X, ScrollText, Mic } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X, ScrollText, Mic, ChevronDown, ChevronUp } from 'lucide-react';
 import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, selectResumeLines, getRelevantTechnicalQuestions } from '../services/gemini';
 import { renderResumeMarkdown, trimToBudget, getCandidateLines } from '../services/resumeRenderer';
 import { downloadResume, DownloadFormat } from '../services/resumeDownload';
@@ -180,6 +180,7 @@ export const JobDetail: React.FC = () => {
         : null;
 
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+    const [resumeEditsOpen, setResumeEditsOpen] = useState(true);
 
     const handleExportGeneratedResume = (format: DownloadFormat) => {
         if (!generatedMarkdown) return;
@@ -198,6 +199,7 @@ export const JobDetail: React.FC = () => {
         ...rawAnalysis,
         fitReason: Array.isArray(rawAnalysis.fitReason) ? rawAnalysis.fitReason : [rawAnalysis.fitReason as unknown as string],
         resumeEdits: Array.isArray(rawAnalysis.resumeEdits) ? rawAnalysis.resumeEdits : [rawAnalysis.resumeEdits as unknown as string],
+        missingExperience: Array.isArray(rawAnalysis.missingExperience) ? rawAnalysis.missingExperience : (rawAnalysis.missingExperience ? [rawAnalysis.missingExperience as unknown as string] : []),
     } : null;
 
     return (
@@ -499,11 +501,11 @@ export const JobDetail: React.FC = () => {
                                             </ul>
                                         </div>
                                         <div>
-                                            <h4 className="font-medium text-ink mb-2">What edits to my resume should I make to stand out?</h4>
+                                            <h4 className="font-medium text-ink mb-2">What from my experience is missing?</h4>
                                             <ol className="bg-cream p-4 rounded-lg space-y-3">
-                                                {analysis.resumeEdits.map((edit, i) => (
+                                                {analysis.missingExperience.map((item, i) => (
                                                     <li key={i} className="text-sm text-ink flex items-start">
-                                                        <span className="mr-2 font-medium text-wood flex-shrink-0">{i + 1}.</span>{renderBold(edit)}
+                                                        <span className="mr-2 font-medium text-wood flex-shrink-0">{i + 1}.</span>{renderBold(item)}
                                                     </li>
                                                 ))}
                                             </ol>
@@ -525,6 +527,27 @@ export const JobDetail: React.FC = () => {
                                 <Sparkles className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
                                 <p>AI features require a job description. Please add one in the Details tab first.</p>
                             </div>
+                        )}
+
+                        {analysis && analysis.resumeEdits.length > 0 && (
+                            <Card className="p-0 overflow-hidden">
+                                <button
+                                    className="w-full flex justify-between items-center px-6 py-4 text-left hover:bg-cream/50 transition-colors"
+                                    onClick={() => setResumeEditsOpen(v => !v)}
+                                >
+                                    <h2 className="font-medium text-ink">What edits to my resume should I make to stand out?</h2>
+                                    {resumeEditsOpen ? <ChevronUp className="w-4 h-4 text-taupe flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-taupe flex-shrink-0" />}
+                                </button>
+                                {resumeEditsOpen && (
+                                    <ol className="px-6 pb-5 space-y-3">
+                                        {analysis.resumeEdits.map((edit, i) => (
+                                            <li key={i} className="text-sm text-ink flex items-start">
+                                                <span className="mr-2 font-medium text-wood flex-shrink-0">{i + 1}.</span>{renderBold(edit)}
+                                            </li>
+                                        ))}
+                                    </ol>
+                                )}
+                            </Card>
                         )}
 
                         <div className="space-y-6">

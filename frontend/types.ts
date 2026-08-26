@@ -23,6 +23,7 @@ export interface JobAnalysis {
     cons: string[];
     fitReason: string[];
     resumeEdits: string[];
+    missingExperience: string[];
     createdAt: string;
 }
 

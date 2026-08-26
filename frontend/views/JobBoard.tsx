@@ -54,7 +54,7 @@ export const JobBoard: React.FC = () => {
             {/* ── Mobile header ── */}
             <div className="md:hidden mb-4 space-y-3">
                 <div className="flex justify-between items-center">
-                    <h1 className="text-xl font-bold text-ink">Job Board</h1>
+                    <h1 className="text-xl font-bold text-ink">Your Jobs</h1>
                     <Button icon={Plus} onClick={() => setIsAdding(true)}>Add Job</Button>
                 </div>
                 <div className="relative">
@@ -71,7 +71,7 @@ export const JobBoard: React.FC = () => {
 
             {/* ── Desktop header ── */}
             <div className="hidden md:flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-ink">Job Board</h1>
+                <h1 className="text-2xl font-bold text-ink">Your Jobs</h1>
                 <div className="flex space-x-4">
                     <div className="relative">
                         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-taupe" />

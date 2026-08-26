@@ -538,7 +538,7 @@ export const JobDetail: React.FC = () => {
                                     {resumeEditsOpen ? <ChevronUp className="w-4 h-4 text-taupe flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-taupe flex-shrink-0" />}
                                 </button>
                                 {resumeEditsOpen && (
-                                    <ol className="px-6 pb-5 space-y-3">
+                                    <ol className="mx-6 mb-5 bg-cream p-4 rounded-lg space-y-3">
                                         {analysis.resumeEdits.map((edit, i) => (
                                             <li key={i} className="text-sm text-ink flex items-start">
                                                 <span className="mr-2 font-medium text-wood flex-shrink-0">{i + 1}.</span>{renderBold(edit)}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Badge, Textarea, Input, renderBold, renderMarkdown } from '../components/UI';
-import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X, ScrollText, Mic } from 'lucide-react';
 import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, selectResumeLines, getRelevantTechnicalQuestions } from '../services/gemini';
 import { renderResumeMarkdown, trimToBudget, getCandidateLines } from '../services/resumeRenderer';
 import { downloadResume, DownloadFormat } from '../services/resumeDownload';
@@ -13,7 +13,7 @@ export const JobDetail: React.FC = () => {
         jobs, notes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, setJobAnalysis, jobSources, addInterviewQuestion,
         resumeSections, resumeCharBudget, resumeTextBlocks, resumeEntries, resumeLines, resumeMarkdown, resumeGenerations, saveResumeGeneration,
     } = useAppStore();
-    const [activeTab, setActiveTab] = useState<'details' | 'ai' | 'notes'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'ai' | 'resume' | 'interview' | 'notes'>('details');
     
     // Edit State
     const [isEditing, setIsEditing] = useState(false);
@@ -246,6 +246,8 @@ export const JobDetail: React.FC = () => {
                     {[
                         { id: 'details', label: 'Details', shortLabel: 'Details', icon: FileText },
                         { id: 'ai', label: 'Match Insights', shortLabel: 'Insights', icon: Sparkles },
+                        { id: 'resume', label: 'Resume Edits', shortLabel: 'Resume', icon: ScrollText },
+                        { id: 'interview', label: 'Interview Prep', shortLabel: 'Interview', icon: Mic },
                         { id: 'notes', label: 'Notes & Events', shortLabel: 'Notes', icon: MessageSquare }
                     ].map(tab => (
                         <button
@@ -453,7 +455,7 @@ export const JobDetail: React.FC = () => {
                     </div>
                 )}
 
-                {/* AI ASSISTANT TAB */}
+                {/* MATCH INSIGHTS TAB */}
                 {activeTab === 'ai' && (
                     <div className="space-y-6">
                         {!job.description && (
@@ -463,7 +465,6 @@ export const JobDetail: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Match Analysis */}
                         <Card className="p-6">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-lg font-semibold text-ink flex items-center"><Target className="w-5 h-5 mr-2 text-wood"/> Job Match Analysis</h2>
@@ -513,74 +514,20 @@ export const JobDetail: React.FC = () => {
                                 <p className="text-taupe text-sm">Click analyze to see how well this job matches your career preferences.</p>
                             )}
                         </Card>
+                    </div>
+                )}
+
+                {/* RESUME EDITS TAB */}
+                {activeTab === 'resume' && (
+                    <div className="space-y-6">
+                        {!job.description && (
+                            <div className="bg-sand border border-wood text-wood-dark p-4 rounded-lg flex items-start">
+                                <Sparkles className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
+                                <p>AI features require a job description. Please add one in the Details tab first.</p>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Interview Prep */}
-                            <Card className="p-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-lg font-semibold text-ink">Interview Prep</h2>
-                                    <Button variant="secondary" size="sm" onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !job.description}>
-                                        {isGeneratingQuestions ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Generate Qs'}
-                                    </Button>
-                                </div>
-
-                                {(() => {
-                                    const relevantSaved = interviewQuestions.filter(q =>
-                                        q.category === 'Technical' &&
-                                        q.response?.trim() &&
-                                        relevantTechnicalIds?.includes(q.id)
-                                    );
-                                    if (isCheckingRelevance) return (
-                                        <div className="mb-5 flex items-center gap-2 text-sm text-taupe">
-                                            <Loader2 className="w-4 h-4 animate-spin" /> Checking saved prep relevance...
-                                        </div>
-                                    );
-                                    if (!relevantSaved.length) return null;
-                                    return (
-                                        <div className="mb-5">
-                                            <h3 className="text-xs font-semibold text-taupe uppercase tracking-wider mb-3">From Your Saved Prep</h3>
-                                            <ul className="space-y-3">
-                                                {relevantSaved.map(q => (
-                                                    <li key={q.id} className="text-sm bg-cream rounded-lg p-3 space-y-1">
-                                                        <p className="font-medium text-ink">{q.question}</p>
-                                                        <p className="text-taupe">{q.response}</p>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    );
-                                })()}
-
-                                {aiQuestions ? (
-                                    <div>
-                                        <h3 className="text-xs font-semibold text-taupe uppercase tracking-wider mb-3">AI Suggested Questions</h3>
-                                        <ul className="space-y-3">
-                                            {aiQuestions.split('\n').filter(l => l.trim()).map((line, i) => (
-                                                <li key={i} className="text-sm text-ink flex items-start justify-between gap-2">
-                                                    <span>{renderBold(line)}</span>
-                                                    {savedAiQuestions.has(i) ? (
-                                                        <CheckCircle2 className="w-4 h-4 text-sage flex-shrink-0 mt-0.5" />
-                                                    ) : (
-                                                        <button
-                                                            title="Save to Interview Prep"
-                                                            className="text-taupe hover:text-wood flex-shrink-0 mt-0.5"
-                                                            onClick={() => {
-                                                                addInterviewQuestion({ question: line.replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, ''), response: '', category: 'General' });
-                                                                setSavedAiQuestions(prev => new Set(prev).add(i));
-                                                            }}
-                                                        >
-                                                            <Plus className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                ) : (
-                                    <p className="text-taupe text-sm">Generate potential interview questions based on the job description.</p>
-                                )}
-                            </Card>
-
                             {/* Additional lines for this job */}
                             <Card className="p-6">
                                 <h2 className="text-lg font-semibold text-ink mb-2">Additional Resume Lines</h2>
@@ -670,6 +617,83 @@ export const JobDetail: React.FC = () => {
                                 </div>
                             </Card>
                         </div>
+                    </div>
+                )}
+
+                {/* INTERVIEW PREP TAB */}
+                {activeTab === 'interview' && (
+                    <div className="space-y-6">
+                        {!job.description && (
+                            <div className="bg-sand border border-wood text-wood-dark p-4 rounded-lg flex items-start">
+                                <Sparkles className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
+                                <p>AI features require a job description. Please add one in the Details tab first.</p>
+                            </div>
+                        )}
+
+                        <Card className="p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-lg font-semibold text-ink">Interview Prep</h2>
+                                <Button variant="secondary" onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !job.description}>
+                                    {isGeneratingQuestions ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Generate Qs'}
+                                </Button>
+                            </div>
+
+                            {(() => {
+                                const relevantSaved = interviewQuestions.filter(q =>
+                                    q.category === 'Technical' &&
+                                    q.response?.trim() &&
+                                    relevantTechnicalIds?.includes(q.id)
+                                );
+                                if (isCheckingRelevance) return (
+                                    <div className="mb-5 flex items-center gap-2 text-sm text-taupe">
+                                        <Loader2 className="w-4 h-4 animate-spin" /> Checking saved prep relevance...
+                                    </div>
+                                );
+                                if (!relevantSaved.length) return null;
+                                return (
+                                    <div className="mb-5">
+                                        <h3 className="text-xs font-semibold text-taupe uppercase tracking-wider mb-3">From Your Saved Prep</h3>
+                                        <ul className="space-y-3">
+                                            {relevantSaved.map(q => (
+                                                <li key={q.id} className="text-sm bg-cream rounded-lg p-3 space-y-1">
+                                                    <p className="font-medium text-ink">{q.question}</p>
+                                                    <p className="text-taupe">{q.response}</p>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                );
+                            })()}
+
+                            {aiQuestions ? (
+                                <div>
+                                    <h3 className="text-xs font-semibold text-taupe uppercase tracking-wider mb-3">AI Suggested Questions</h3>
+                                    <ul className="space-y-3">
+                                        {aiQuestions.split('\n').filter(l => l.trim()).map((line, i) => (
+                                            <li key={i} className="text-sm text-ink flex items-start justify-between gap-2">
+                                                <span>{renderBold(line)}</span>
+                                                {savedAiQuestions.has(i) ? (
+                                                    <CheckCircle2 className="w-4 h-4 text-sage flex-shrink-0 mt-0.5" />
+                                                ) : (
+                                                    <button
+                                                        title="Save to Interview Prep"
+                                                        className="text-taupe hover:text-wood flex-shrink-0 mt-0.5"
+                                                        onClick={() => {
+                                                            addInterviewQuestion({ question: line.replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, ''), response: '', category: 'General' });
+                                                            setSavedAiQuestions(prev => new Set(prev).add(i));
+                                                        }}
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : (
+                                <p className="text-taupe text-sm">Generate potential interview questions based on the job description.</p>
+                            )}
+                        </Card>
                     </div>
                 )}
             </div>

@@ -76,13 +76,8 @@ async function init() {
         document.getElementById('signed-in-as').textContent = `Signed in as ${email}`;
       }
     }).catch(() => {});
-  } catch (err) {
-    console.error('Get the Job popup init failed:', err);
-    showState('unconfigured');
-    return;
-  }
 
-  document.getElementById('submit').addEventListener('click', async () => {
+    document.getElementById('submit').addEventListener('click', async () => {
     const submitBtn = document.getElementById('submit');
     const statusEl = document.getElementById('form-status');
     const title = document.getElementById('title').value.trim();
@@ -123,6 +118,10 @@ async function init() {
       submitBtn.disabled = false;
     }
   });
+  } catch (err) {
+    console.error('Get the Job popup init failed:', err);
+    showState('unconfigured');
+  }
 }
 
 init();

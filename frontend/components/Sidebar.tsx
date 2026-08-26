@@ -9,7 +9,7 @@ export const Sidebar: React.FC = () => {
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'chatbot', label: 'Search Assistant', icon: Bot },
         { id: 'jobs', label: 'Your Jobs', icon: KanbanSquare },
-        { id: 'resumes', label: 'Resumes', icon: FileText },
+        { id: 'resumes', label: 'Resume', icon: FileText },
         { id: 'journal', label: 'Search Journal', icon: BookOpen },
         { id: 'interview-prep', label: 'Interview Prep', icon: MessageCircle },
         { id: 'sources', label: 'Sources', icon: Globe },

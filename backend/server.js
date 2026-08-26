@@ -8,10 +8,11 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
-import { GoogleAuth } from 'google-auth-library';
+import { GoogleAuth, OAuth2Client } from 'google-auth-library';
 import fetch from 'node-fetch';
 import rateLimit from 'express-rate-limit';
 import { WebSocketServer, WebSocket } from 'ws';
+import { RESUME_SECTIONS, TOTAL_CHAR_BUDGET, getSection } from './resumeSections.js';
 
 const app = express();
 app.use(cors({
@@ -36,6 +37,14 @@ if (!GOOGLE_CLOUD_PROJECT || !GOOGLE_CLOUD_LOCATION) {
 const PROXY_HEADER = process?.env?.PROXY_HEADER;
 if (!PROXY_HEADER) {
   console.error("Error: Environment variables PROXY_HEADER must be set.");
+  process.exit(1);
+}
+
+// GOOGLE_CLIENT_ID is the OAuth client ID used to verify the Google ID
+// tokens the frontend's Sign-In button issues (see the accounts/auth
+// section below). Must match the frontend's GOOGLE_CLIENT_ID exactly.
+if (!process.env.GOOGLE_CLIENT_ID) {
+  console.error("Error: Environment variable GOOGLE_CLIENT_ID must be set.");
   process.exit(1);
 }
 
@@ -359,6 +368,59 @@ const requireDb = (req, res, next) => {
   next();
 };
 
+// ── Accounts / auth ─────────────────────────────────────────────────────────
+// Every /api/* route requires a valid Google ID token (the same one the
+// frontend's Google Sign-In button already produces) in the Authorization
+// header: `Authorization: Bearer <id_token>`. The token is verified against
+// Google (not just decoded), the email is checked against ALLOWED_EMAILS,
+// and an `accounts` row is created on first sign-in so every account's data
+// stays isolated from every other account's — the demo account included.
+const oauth2Client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+const ALLOWED_EMAILS = (process.env.ALLOWED_EMAILS || '')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+const requireAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'] || '';
+    const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!idToken) return res.status(401).json({ error: 'Missing bearer token' });
+
+    const ticket = await oauth2Client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const email = (payload?.email || '').toLowerCase();
+    if (!email || !payload.email_verified) {
+      return res.status(401).json({ error: 'Unverified Google account' });
+    }
+    if (ALLOWED_EMAILS.length && !ALLOWED_EMAILS.includes(email)) {
+      return res.status(403).json({ error: 'This account is not authorized to access this app' });
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO accounts (email, "displayName")
+       VALUES ($1, $2)
+       ON CONFLICT (email) DO UPDATE SET "displayName" = COALESCE(accounts."displayName", $2)
+       RETURNING id, email, "isDemo"`,
+      [email, payload.name || null]
+    );
+    req.accountId = rows[0].id;
+    req.accountEmail = rows[0].email;
+    req.isDemoAccount = rows[0].isDemo;
+    next();
+  } catch (e) {
+    console.error('[Auth] Token verification failed:', e.message);
+    res.status(401).json({ error: 'Invalid or expired sign-in — please sign in again' });
+  }
+};
+
+// Every route below this line requires a verified, authorized account.
+app.use('/api', requireDb, requireAuth);
+
 // ── API routes ───────────────────────────────────────────────────────────────
 
 const dbError = (res, err) => {
@@ -366,42 +428,46 @@ const dbError = (res, err) => {
   res.status(500).json({ error: err.message });
 };
 
+app.get('/api/me', (req, res) => {
+  res.json({ email: req.accountEmail, isDemo: req.isDemoAccount });
+});
+
 // Jobs
-app.get('/api/jobs', requireDb, async (req, res) => {
+app.get('/api/jobs', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM jobs ORDER BY "dateAdded" DESC');
+    const { rows } = await pool.query('SELECT * FROM jobs WHERE "accountId"=$1 ORDER BY "dateAdded" DESC', [req.accountId]);
     res.json(rows);
   } catch (e) { dbError(res, e); }
 });
-app.post('/api/jobs', requireDb, async (req, res) => {
+app.post('/api/jobs', async (req, res) => {
   try {
     const j = req.body;
     await pool.query(
-      `INSERT INTO jobs (id, title, company, status, url, description, "dateAdded", "matchScore", "matchAnalysis", location, tags, "dateApplied", "customFields", source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) ON CONFLICT (id) DO NOTHING`,
-      [j.id, j.title, j.company, j.status, j.url, j.description, j.dateAdded, j.matchScore || null, j.matchAnalysis, j.location,
+      `INSERT INTO jobs (id, "accountId", title, company, status, url, description, "dateAdded", "matchScore", "matchAnalysis", location, tags, "dateApplied", "customFields", source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) ON CONFLICT (id) DO NOTHING`,
+      [j.id, req.accountId, j.title, j.company, j.status, j.url, j.description, j.dateAdded, j.matchScore || null, j.matchAnalysis, j.location,
        JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {}), j.source || null]
     );
     res.status(201).json(j);
   } catch (e) { dbError(res, e); }
 });
-app.put('/api/jobs/:id', requireDb, async (req, res) => {
+app.put('/api/jobs/:id', async (req, res) => {
   try {
     const j = req.body;
     await pool.query(
       `UPDATE jobs SET
-         title        = COALESCE($2, title),
-         company      = COALESCE($3, company),
-         status       = COALESCE($4, status),
-         url          = COALESCE($5, url),
-         description  = COALESCE($6, description),
-         location     = COALESCE($7, location),
-         tags         = $8,
-         "dateApplied"   = $9,
-         "customFields"  = $10,
-         source          = $11
-       WHERE id=$1`,
-      [req.params.id,
+         title        = COALESCE($3, title),
+         company      = COALESCE($4, company),
+         status       = COALESCE($5, status),
+         url          = COALESCE($6, url),
+         description  = COALESCE($7, description),
+         location     = COALESCE($8, location),
+         tags         = $9,
+         "dateApplied"   = $10,
+         "customFields"  = $11,
+         source          = $12
+       WHERE id=$1 AND "accountId"=$2`,
+      [req.params.id, req.accountId,
        j.title   || null, j.company || null, j.status || null,
        j.url     || null, j.description || null, j.location || null,
        JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {}),
@@ -410,208 +476,317 @@ app.put('/api/jobs/:id', requireDb, async (req, res) => {
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
-app.delete('/api/jobs/:id', requireDb, async (req, res) => {
+app.delete('/api/jobs/:id', async (req, res) => {
   try {
-    await pool.query('DELETE FROM jobs WHERE id=$1', [req.params.id]);
+    await pool.query('DELETE FROM jobs WHERE id=$1 AND "accountId"=$2', [req.params.id, req.accountId]);
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
 
 // Notes
-app.get('/api/notes', requireDb, async (req, res) => {
+app.get('/api/notes', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM notes ORDER BY date DESC');
+    const { rows } = await pool.query('SELECT * FROM notes WHERE "accountId"=$1 ORDER BY date DESC', [req.accountId]);
     res.json(rows);
   } catch (e) { dbError(res, e); }
 });
-app.post('/api/notes', requireDb, async (req, res) => {
+app.post('/api/notes', async (req, res) => {
   try {
     const n = req.body;
     await pool.query(
-      `INSERT INTO notes (id, "jobId", type, title, content, date, "isAiGenerated")
-       VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO NOTHING`,
-      [n.id, n.jobId, n.type, n.title, n.content, n.date, n.isAiGenerated ?? false]
+      `INSERT INTO notes (id, "accountId", "jobId", type, title, content, date, "isAiGenerated")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
+      [n.id, req.accountId, n.jobId, n.type, n.title, n.content, n.date, n.isAiGenerated ?? false]
     );
     res.status(201).json(n);
   } catch (e) { dbError(res, e); }
 });
-app.delete('/api/notes/:id', requireDb, async (req, res) => {
+app.delete('/api/notes/:id', async (req, res) => {
   try {
-    await pool.query('DELETE FROM notes WHERE id=$1', [req.params.id]);
+    await pool.query('DELETE FROM notes WHERE id=$1 AND "accountId"=$2', [req.params.id, req.accountId]);
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
 
-// Resumes
-app.get('/api/resumes', requireDb, async (req, res) => {
+// Resume — a single structured resume per account. Section definitions
+// (ids/labels/types) live in ./resumeSections.js, not here, so they can be
+// changed without touching routes or the frontend.
+app.get('/api/resume-config', (req, res) => {
+  res.json({ sections: RESUME_SECTIONS, totalCharBudget: TOTAL_CHAR_BUDGET });
+});
+
+app.get('/api/resume', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM resumes ORDER BY "lastUpdated" DESC');
-    res.json(rows);
+    const [textBlocks, entries, lines] = await Promise.all([
+      pool.query('SELECT * FROM resume_section_content WHERE "accountId"=$1', [req.accountId]),
+      pool.query('SELECT * FROM resume_entries WHERE "accountId"=$1 ORDER BY "order" ASC', [req.accountId]),
+      pool.query('SELECT * FROM resume_lines WHERE "accountId"=$1 ORDER BY "order" ASC', [req.accountId]),
+    ]);
+    res.json({ textBlocks: textBlocks.rows, entries: entries.rows, lines: lines.rows });
   } catch (e) { dbError(res, e); }
 });
-app.post('/api/resumes', requireDb, async (req, res) => {
+
+app.get('/api/resume/raw-import', async (req, res) => {
   try {
-    const r = req.body;
-    await pool.query(
-      `INSERT INTO resumes (id, name, content, "targetRole", "lastUpdated")
-       VALUES ($1,$2,$3,$4,$5) ON CONFLICT (id) DO NOTHING`,
-      [r.id, r.name, r.content, r.targetRole, r.lastUpdated]
-    );
-    res.status(201).json(r);
+    const { rows } = await pool.query('SELECT * FROM resume_raw_import WHERE "accountId"=$1', [req.accountId]);
+    res.json(rows[0] ?? null);
   } catch (e) { dbError(res, e); }
 });
-app.put('/api/resumes/:id', requireDb, async (req, res) => {
+app.put('/api/resume/raw-import', async (req, res) => {
   try {
-    const r = req.body;
+    const { content } = req.body;
     await pool.query(
-      `UPDATE resumes SET name=$2, content=$3, "targetRole"=$4, "lastUpdated"=$5 WHERE id=$1`,
-      [req.params.id, r.name, r.content, r.targetRole, r.lastUpdated]
+      `INSERT INTO resume_raw_import ("accountId", content, "importedAt") VALUES ($1,$2,NOW())
+       ON CONFLICT ("accountId") DO UPDATE SET content=$2, "importedAt"=NOW()`,
+      [req.accountId, content ?? '']
     );
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
-app.delete('/api/resumes/:id', requireDb, async (req, res) => {
+
+app.put('/api/resume/text/:sectionId', async (req, res) => {
   try {
-    await pool.query('DELETE FROM resumes WHERE id=$1', [req.params.id]);
+    const section = getSection(req.params.sectionId);
+    if (!section || section.type !== 'text') return res.status(400).json({ error: 'Unknown text section' });
+    const { content } = req.body;
+    await pool.query(
+      `INSERT INTO resume_section_content ("accountId", "sectionId", content, "updatedAt") VALUES ($1,$2,$3,NOW())
+       ON CONFLICT ("accountId","sectionId") DO UPDATE SET content=$3, "updatedAt"=NOW()`,
+      [req.accountId, req.params.sectionId, content ?? '']
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+
+app.post('/api/resume/entries', async (req, res) => {
+  try {
+    const en = req.body;
+    const section = getSection(en.sectionId);
+    if (!section || section.type !== 'entries') return res.status(400).json({ error: 'Unknown entries section' });
+    await pool.query(
+      `INSERT INTO resume_entries (id, "accountId", "sectionId", heading, subheading, "startDate", "endDate", "order")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
+      [en.id, req.accountId, en.sectionId, en.heading || null, en.subheading || null, en.startDate || null, en.endDate || null, en.order ?? 0]
+    );
+    res.status(201).json(en);
+  } catch (e) { dbError(res, e); }
+});
+app.put('/api/resume/entries/:id', async (req, res) => {
+  try {
+    const en = req.body;
+    await pool.query(
+      `UPDATE resume_entries SET heading=$3, subheading=$4, "startDate"=$5, "endDate"=$6, "order"=$7 WHERE id=$1 AND "accountId"=$2`,
+      [req.params.id, req.accountId, en.heading || null, en.subheading || null, en.startDate || null, en.endDate || null, en.order ?? 0]
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+app.delete('/api/resume/entries/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM resume_entries WHERE id=$1 AND "accountId"=$2', [req.params.id, req.accountId]);
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+
+app.post('/api/resume/lines', async (req, res) => {
+  try {
+    const l = req.body;
+    const section = getSection(l.sectionId);
+    if (!section || section.type === 'text') return res.status(400).json({ error: 'Unknown or non-line section' });
+    if (l.jobId) {
+      const { rows } = await pool.query('SELECT 1 FROM jobs WHERE id=$1 AND "accountId"=$2', [l.jobId, req.accountId]);
+      if (!rows.length) return res.status(400).json({ error: 'Unknown job' });
+    }
+    if (l.entryId) {
+      const { rows } = await pool.query('SELECT 1 FROM resume_entries WHERE id=$1 AND "accountId"=$2', [l.entryId, req.accountId]);
+      if (!rows.length) return res.status(400).json({ error: 'Unknown entry' });
+    }
+    await pool.query(
+      `INSERT INTO resume_lines (id, "accountId", "sectionId", "entryId", "jobId", content, "order")
+       VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO NOTHING`,
+      [l.id, req.accountId, l.sectionId, l.entryId || null, l.jobId || null, l.content, l.order ?? 0]
+    );
+    res.status(201).json(l);
+  } catch (e) { dbError(res, e); }
+});
+app.put('/api/resume/lines/:id', async (req, res) => {
+  try {
+    const l = req.body;
+    await pool.query(
+      `UPDATE resume_lines SET content=$3, "order"=$4 WHERE id=$1 AND "accountId"=$2`,
+      [req.params.id, req.accountId, l.content, l.order ?? 0]
+    );
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+app.delete('/api/resume/lines/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM resume_lines WHERE id=$1 AND "accountId"=$2', [req.params.id, req.accountId]);
+    res.status(204).end();
+  } catch (e) { dbError(res, e); }
+});
+
+// Resume Generations — the last AI line-selection + rendered Markdown per job.
+app.get('/api/resume-generations', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM resume_generations WHERE "accountId"=$1 ORDER BY "updatedAt" DESC', [req.accountId]);
+    res.json(rows);
+  } catch (e) { dbError(res, e); }
+});
+app.get('/api/resume-generations/:jobId', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM resume_generations WHERE "jobId"=$1 AND "accountId"=$2', [req.params.jobId, req.accountId]);
+    res.json(rows[0] ?? null);
+  } catch (e) { dbError(res, e); }
+});
+app.put('/api/resume-generations/:jobId', async (req, res) => {
+  try {
+    const g = req.body;
+    await pool.query(
+      `INSERT INTO resume_generations ("jobId", "accountId", "selectedLineIds", "renderedMarkdown", "createdAt", "updatedAt")
+       VALUES ($1,$2,$3,$4,NOW(),NOW())
+       ON CONFLICT ("jobId") DO UPDATE SET "selectedLineIds"=$3, "renderedMarkdown"=$4, "updatedAt"=NOW()`,
+      [req.params.jobId, req.accountId, JSON.stringify(g.selectedLineIds ?? []), g.renderedMarkdown ?? '']
+    );
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
 
 // Context Resources
-app.get('/api/context', requireDb, async (req, res) => {
+app.get('/api/context', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM context_resources ORDER BY "dateAdded" DESC');
+    const { rows } = await pool.query('SELECT * FROM context_resources WHERE "accountId"=$1 ORDER BY "dateAdded" DESC', [req.accountId]);
     res.json(rows);
   } catch (e) { dbError(res, e); }
 });
-app.post('/api/context', requireDb, async (req, res) => {
+app.post('/api/context', async (req, res) => {
   try {
     const c = req.body;
     await pool.query(
-      `INSERT INTO context_resources (id, title, content, "dateAdded") VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO NOTHING`,
-      [c.id, c.title, c.content, c.dateAdded]
+      `INSERT INTO context_resources (id, "accountId", title, content, "dateAdded") VALUES ($1,$2,$3,$4,$5) ON CONFLICT (id) DO NOTHING`,
+      [c.id, req.accountId, c.title, c.content, c.dateAdded]
     );
     res.status(201).json(c);
   } catch (e) { dbError(res, e); }
 });
-app.delete('/api/context/:id', requireDb, async (req, res) => {
+app.delete('/api/context/:id', async (req, res) => {
   try {
-    await pool.query('DELETE FROM context_resources WHERE id=$1', [req.params.id]);
+    await pool.query('DELETE FROM context_resources WHERE id=$1 AND "accountId"=$2', [req.params.id, req.accountId]);
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
 
-// Preferences (single row, id=1)
-app.get('/api/preferences', requireDb, async (req, res) => {
+// Preferences (one row per account)
+app.get('/api/preferences', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM preferences WHERE id=1');
+    const { rows } = await pool.query('SELECT * FROM preferences WHERE "accountId"=$1', [req.accountId]);
     res.json(rows[0] ?? {});
   } catch (e) { dbError(res, e); }
 });
-app.put('/api/preferences', requireDb, async (req, res) => {
+app.put('/api/preferences', async (req, res) => {
   try {
     const p = req.body;
     await pool.query(
-      `INSERT INTO preferences (id, "petalsExercise", "linkedInProfile", "primaryResume") VALUES (1,$1,$2,$3)
-       ON CONFLICT (id) DO UPDATE SET "petalsExercise"=$1, "linkedInProfile"=$2, "primaryResume"=$3`,
-      [p.petalsExercise, p.linkedInProfile ?? null, p.primaryResume ?? null]
+      `INSERT INTO preferences ("accountId", "petalsExercise", "linkedInProfile") VALUES ($1,$2,$3)
+       ON CONFLICT ("accountId") DO UPDATE SET "petalsExercise"=$2, "linkedInProfile"=$3`,
+      [req.accountId, p.petalsExercise, p.linkedInProfile ?? null]
     );
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
 
 // Journal Entries
-app.get('/api/journal', requireDb, async (req, res) => {
+app.get('/api/journal', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM journal_entries ORDER BY date DESC');
+    const { rows } = await pool.query('SELECT * FROM journal_entries WHERE "accountId"=$1 ORDER BY date DESC', [req.accountId]);
     res.json(rows);
   } catch (e) { dbError(res, e); }
 });
-app.post('/api/journal', requireDb, async (req, res) => {
+app.post('/api/journal', async (req, res) => {
   try {
     const e = req.body;
     await pool.query(
-      `INSERT INTO journal_entries (id, date, content) VALUES ($1,$2,$3) ON CONFLICT (id) DO NOTHING`,
-      [e.id, e.date, e.content]
+      `INSERT INTO journal_entries (id, "accountId", date, content) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO NOTHING`,
+      [e.id, req.accountId, e.date, e.content]
     );
     res.status(201).json(e);
   } catch (e) { dbError(res, e); }
 });
-app.put('/api/journal/:id', requireDb, async (req, res) => {
+app.put('/api/journal/:id', async (req, res) => {
   try {
     const e = req.body;
     await pool.query(
-      `UPDATE journal_entries SET date=$2, content=$3 WHERE id=$1`,
-      [req.params.id, e.date, e.content]
+      `UPDATE journal_entries SET date=$3, content=$4 WHERE id=$1 AND "accountId"=$2`,
+      [req.params.id, req.accountId, e.date, e.content]
     );
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
-app.delete('/api/journal/:id', requireDb, async (req, res) => {
+app.delete('/api/journal/:id', async (req, res) => {
   try {
-    await pool.query('DELETE FROM journal_entries WHERE id=$1', [req.params.id]);
+    await pool.query('DELETE FROM journal_entries WHERE id=$1 AND "accountId"=$2', [req.params.id, req.accountId]);
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
 
 // Interview Questions
-app.get('/api/interview-questions', requireDb, async (req, res) => {
+app.get('/api/interview-questions', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM interview_questions ORDER BY "dateAdded" DESC');
+    const { rows } = await pool.query('SELECT * FROM interview_questions WHERE "accountId"=$1 ORDER BY "dateAdded" DESC', [req.accountId]);
     res.json(rows);
   } catch (e) { dbError(res, e); }
 });
-app.post('/api/interview-questions', requireDb, async (req, res) => {
+app.post('/api/interview-questions', async (req, res) => {
   try {
     const q = req.body;
     await pool.query(
-      `INSERT INTO interview_questions (id, question, response, category, "dateAdded")
-       VALUES ($1,$2,$3,$4,$5) ON CONFLICT (id) DO NOTHING`,
-      [q.id, q.question, q.response, q.category ?? 'General', q.dateAdded]
+      `INSERT INTO interview_questions (id, "accountId", question, response, category, "dateAdded")
+       VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (id) DO NOTHING`,
+      [q.id, req.accountId, q.question, q.response, q.category ?? 'General', q.dateAdded]
     );
     res.status(201).json(q);
   } catch (e) { dbError(res, e); }
 });
-app.put('/api/interview-questions/:id', requireDb, async (req, res) => {
+app.put('/api/interview-questions/:id', async (req, res) => {
   try {
     const q = req.body;
     await pool.query(
-      `UPDATE interview_questions SET question=$2, response=$3, category=$4 WHERE id=$1`,
-      [req.params.id, q.question, q.response, q.category ?? 'General']
+      `UPDATE interview_questions SET question=$3, response=$4, category=$5 WHERE id=$1 AND "accountId"=$2`,
+      [req.params.id, req.accountId, q.question, q.response, q.category ?? 'General']
     );
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
-app.delete('/api/interview-questions/:id', requireDb, async (req, res) => {
+app.delete('/api/interview-questions/:id', async (req, res) => {
   try {
-    await pool.query('DELETE FROM interview_questions WHERE id=$1', [req.params.id]);
+    await pool.query('DELETE FROM interview_questions WHERE id=$1 AND "accountId"=$2', [req.params.id, req.accountId]);
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
 
 // Job Analyses
-app.get('/api/job-analyses', requireDb, async (req, res) => {
+app.get('/api/job-analyses', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM job_analyses ORDER BY "createdAt" DESC');
+    const { rows } = await pool.query('SELECT * FROM job_analyses WHERE "accountId"=$1 ORDER BY "createdAt" DESC', [req.accountId]);
     res.json(rows);
   } catch (e) { dbError(res, e); }
 });
-app.put('/api/job-analyses/:jobId', requireDb, async (req, res) => {
+app.put('/api/job-analyses/:jobId', async (req, res) => {
   try {
     const a = req.body;
-    await pool.query('DELETE FROM job_analyses WHERE "jobId"=$1', [req.params.jobId]);
+    await pool.query('DELETE FROM job_analyses WHERE "jobId"=$1 AND "accountId"=$2', [req.params.jobId, req.accountId]);
     await pool.query(
-      `INSERT INTO job_analyses (id, "jobId", score, pros, cons, "fitReason", "resumeEdits", "createdAt")
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [a.id, req.params.jobId, a.score, JSON.stringify(a.pros ?? []), JSON.stringify(a.cons ?? []),
+      `INSERT INTO job_analyses (id, "accountId", "jobId", score, pros, cons, "fitReason", "resumeEdits", "createdAt")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [a.id, req.accountId, req.params.jobId, a.score, JSON.stringify(a.pros ?? []), JSON.stringify(a.cons ?? []),
        a.fitReason, a.resumeEdits, a.createdAt]
     );
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });
-app.delete('/api/job-analyses/:jobId', requireDb, async (req, res) => {
+app.delete('/api/job-analyses/:jobId', async (req, res) => {
   try {
-    await pool.query('DELETE FROM job_analyses WHERE "jobId"=$1', [req.params.jobId]);
+    await pool.query('DELETE FROM job_analyses WHERE "jobId"=$1 AND "accountId"=$2', [req.params.jobId, req.accountId]);
     res.status(204).end();
   } catch (e) { dbError(res, e); }
 });

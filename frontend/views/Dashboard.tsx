@@ -7,7 +7,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis
 const COLORS = ['#9a8d7a', '#7f927c', '#b7844d', '#31473a', '#9d4c45']; // Saved, Applied, Interviewing, Offer, Rejected
 
 export const Dashboard: React.FC = () => {
-    const { jobs, resumes, navigate } = useAppStore();
+    const { jobs, resumeGenerations, navigate } = useAppStore();
 
     const statusData = useMemo(() => {
         const counts = { Saved: 0, Applied: 0, Interviewing: 0, Offer: 0, Rejected: 0 };
@@ -53,8 +53,8 @@ export const Dashboard: React.FC = () => {
                         <FileText className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-sm font-medium text-taupe">Resumes</p>
-                        <p className="text-2xl font-bold text-ink">{resumes.length}</p>
+                        <p className="text-sm font-medium text-taupe">Tailored Resumes</p>
+                        <p className="text-2xl font-bold text-ink">{resumeGenerations.length}</p>
                     </div>
                 </Card>
             </div>

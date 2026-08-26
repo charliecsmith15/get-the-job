@@ -1,11 +1,19 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useMemo } from 'react';
-import { Job, JobAnalysis, Note, Resume, Preferences, ContextResource, ViewState, DbConfig, SyncStatus, JournalEntry, InterviewQuestion, JobSource } from './types';
+import { Job, JobAnalysis, Note, Preferences, ContextResource, ViewState, DbConfig, SyncStatus, JournalEntry, InterviewQuestion, JobSource, ResumeSectionConfig, ResumeTextBlock, ResumeEntry, ResumeLine, ResumeGeneration } from './types';
 import { createApiClient } from './services/api';
+import { renderResumeMarkdown } from './services/resumeRenderer';
 
 interface AppState {
     jobs: Job[];
     notes: Note[];
-    resumes: Resume[];
+    resumeSections: ResumeSectionConfig[];
+    resumeCharBudget: number;
+    resumeTextBlocks: ResumeTextBlock[];
+    resumeEntries: ResumeEntry[];
+    resumeLines: ResumeLine[];
+    resumeGenerations: ResumeGeneration[];
+    resumeRawImport: string | null;
+    resumeMarkdown: string;
     preferences: Preferences;
     contextResources: ContextResource[];
     journalEntries: JournalEntry[];
@@ -24,9 +32,15 @@ interface AppContextType extends AppState {
     deleteJob: (id: string) => void;
     addNote: (note: Omit<Note, 'id' | 'date'>) => void;
     deleteNote: (id: string) => void;
-    addResume: (resume: Omit<Resume, 'id' | 'lastUpdated'>) => void;
-    updateResume: (id: string, updates: Partial<Resume>) => void;
-    deleteResume: (id: string) => void;
+    updateResumeText: (sectionId: string, content: string) => void;
+    saveResumeRawImport: (content: string) => void;
+    addResumeEntry: (entry: Omit<ResumeEntry, 'id'>) => Promise<ResumeEntry>;
+    updateResumeEntry: (id: string, updates: Partial<ResumeEntry>) => void;
+    deleteResumeEntry: (id: string) => void;
+    addResumeLine: (line: Omit<ResumeLine, 'id'>) => Promise<ResumeLine>;
+    updateResumeLine: (id: string, updates: Partial<ResumeLine>) => void;
+    deleteResumeLine: (id: string) => void;
+    saveResumeGeneration: (jobId: string, selectedLineIds: string[], renderedMarkdown: string) => void;
     updatePreferences: (prefs: Preferences) => void;
     addContextResource: (resource: Omit<ContextResource, 'id' | 'dateAdded'>) => void;
     deleteContextResource: (id: string) => void;
@@ -83,8 +97,26 @@ const mockNotes: Note[] = [
     { id: 'n2', jobId: '1', type: 'Call', title: 'Recruiter Screen', content: 'Salary expectations align. Fully remote role.', date: new Date(Date.now() - 86400000).toISOString() },
 ];
 
-const mockResumes: Resume[] = [
-    { id: 'r1', name: 'Frontend Focused - 2024', targetRole: 'Frontend Engineer', content: '# John Doe\n\n## Experience\n**Senior Frontend Engineer**', lastUpdated: new Date().toISOString() },
+// Offline/no-backend fallback only — mirrors backend/resumeSections.js.
+// Whenever the DB is reachable, GET /api/resume-config is authoritative and
+// overwrites this on load, per the "sections change on the backend" design.
+const DEFAULT_RESUME_SECTIONS: ResumeSectionConfig[] = [
+    { id: 'header', label: 'Contact Info', type: 'text', order: 0 },
+    { id: 'summary', label: 'Summary', type: 'text', order: 1 },
+    { id: 'experience', label: 'Experience', type: 'entries', order: 2 },
+    { id: 'education', label: 'Education', type: 'entries', order: 3 },
+    { id: 'skills', label: 'Skills', type: 'list', order: 4 },
+];
+const DEFAULT_RESUME_CHAR_BUDGET = 4000;
+
+const mockResumeTextBlocks: ResumeTextBlock[] = [
+    { sectionId: 'header', content: 'John Doe\njohn.doe@example.com', updatedAt: new Date().toISOString() },
+];
+const mockResumeEntries: ResumeEntry[] = [
+    { id: 're1', sectionId: 'experience', heading: 'Senior Frontend Engineer', subheading: 'Acme Corp', order: 0 },
+];
+const mockResumeLines: ResumeLine[] = [
+    { id: 'rl1', sectionId: 'experience', entryId: 're1', content: 'Led migration to a component-driven design system.', order: 0 },
 ];
 
 const mockContextResources: ContextResource[] = [
@@ -96,7 +128,13 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [jobs, setJobs] = useState<Job[]>(mockJobs);
     const [notes, setNotes] = useState<Note[]>(mockNotes);
-    const [resumes, setResumes] = useState<Resume[]>(mockResumes);
+    const [resumeSections, setResumeSections] = useState<ResumeSectionConfig[]>(DEFAULT_RESUME_SECTIONS);
+    const [resumeCharBudget, setResumeCharBudget] = useState<number>(DEFAULT_RESUME_CHAR_BUDGET);
+    const [resumeTextBlocks, setResumeTextBlocks] = useState<ResumeTextBlock[]>(mockResumeTextBlocks);
+    const [resumeEntries, setResumeEntries] = useState<ResumeEntry[]>(mockResumeEntries);
+    const [resumeLines, setResumeLines] = useState<ResumeLine[]>(mockResumeLines);
+    const [resumeGenerations, setResumeGenerations] = useState<ResumeGeneration[]>([]);
+    const [resumeRawImport, setResumeRawImport] = useState<string | null>(null);
     const [preferences, setPreferences] = useState<Preferences>(initialPreferences);
     const [contextResources, setContextResources] = useState<ContextResource[]>(mockContextResources);
     const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
@@ -132,6 +170,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const apiClient = useMemo(() => createApiClient(dbConfig.url), [dbConfig.url]);
 
+    // The baseline rendered resume (no per-job lines) — used as "the resume"
+    // everywhere outside of a specific job's tailoring flow: foundational AI
+    // context, interview questions, the chatbot, "Get Advice", and export.
+    const resumeMarkdown = useMemo(
+        () => renderResumeMarkdown(resumeSections, resumeTextBlocks, resumeEntries, resumeLines.filter(l => !l.jobId)),
+        [resumeSections, resumeTextBlocks, resumeEntries, resumeLines]
+    );
+
     // Fetch initial data if DB is enabled
     useEffect(() => {
         if (dbConfig.enabled) {
@@ -139,21 +185,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             Promise.all([
                 apiClient.getJobs().catch(() => []),
                 apiClient.getNotes().catch(() => []),
-                apiClient.getResumes().catch(() => []),
                 apiClient.getContextResources().catch(() => []),
                 apiClient.getPreferences().catch(() => null),
                 apiClient.getJournalEntries().catch(() => []),
                 apiClient.getInterviewQuestions().catch(() => []),
                 apiClient.getJobAnalyses().catch(() => []),
-            ]).then(([j, n, r, c, p, je, iq, ja]) => {
+                apiClient.getResumeConfig().catch(() => null),
+                apiClient.getResume().catch(() => null),
+                apiClient.getResumeGenerations().catch(() => []),
+                apiClient.getResumeRawImport().catch(() => null),
+            ]).then(([j, n, c, p, je, iq, ja, rc, r, rg, ri]) => {
                 if (j.length) setJobs(j);
                 if (n.length) setNotes(n);
-                if (r.length) setResumes(r);
                 if (c.length) setContextResources(c);
                 if (p && Object.keys(p).length > 0) setPreferences(p);
                 if (je.length) setJournalEntries(je);
                 if (iq.length) setInterviewQuestions(iq);
                 if (ja.length) setJobAnalyses(ja);
+                if (rc) { setResumeSections(rc.sections); setResumeCharBudget(rc.totalCharBudget); }
+                if (r) { setResumeTextBlocks(r.textBlocks); setResumeEntries(r.entries); setResumeLines(r.lines); }
+                if (rg.length) setResumeGenerations(rg);
+                if (ri) setResumeRawImport(ri.content);
                 setSyncStatus('idle');
             }).catch(err => {
                 console.error("Failed to fetch from SQL backend:", err);
@@ -253,49 +305,108 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    const addResume = async (resumeData: Omit<Resume, 'id' | 'lastUpdated'>) => {
-        const newResume: Resume = { ...resumeData, id: generateId(), lastUpdated: new Date().toISOString() };
-        setResumes(prev => [newResume, ...prev]);
+    const updateResumeText = async (sectionId: string, content: string) => {
+        const updatedAt = new Date().toISOString();
+        setResumeTextBlocks(prev =>
+            prev.find(t => t.sectionId === sectionId)
+                ? prev.map(t => t.sectionId === sectionId ? { ...t, content, updatedAt } : t)
+                : [...prev, { sectionId, content, updatedAt }]
+        );
 
         if (dbConfig.enabled) {
             setSyncStatus('syncing');
-            try {
-                await apiClient.createResume(newResume);
-                setSyncStatus('idle');
-            } catch (e) {
-                console.error(e);
-                setSyncStatus('error');
-            }
+            try { await apiClient.updateResumeText(sectionId, content); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
         }
     };
 
-    const updateResume = async (id: string, updates: Partial<Resume>) => {
-        setResumes(prev => prev.map(res => res.id === id ? { ...res, ...updates, lastUpdated: new Date().toISOString() } : res));
+    const saveResumeRawImport = async (content: string) => {
+        setResumeRawImport(content);
 
         if (dbConfig.enabled) {
             setSyncStatus('syncing');
-            try {
-                await apiClient.updateResume(id, updates);
-                setSyncStatus('idle');
-            } catch (e) {
-                console.error(e);
-                setSyncStatus('error');
-            }
+            try { await apiClient.saveResumeRawImport(content); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
         }
     };
 
-    const deleteResume = async (id: string) => {
-        setResumes(prev => prev.filter(res => res.id !== id));
+    const addResumeEntry = async (entryData: Omit<ResumeEntry, 'id'>): Promise<ResumeEntry> => {
+        const newEntry: ResumeEntry = { ...entryData, id: generateId() };
+        setResumeEntries(prev => [...prev, newEntry]);
 
         if (dbConfig.enabled) {
             setSyncStatus('syncing');
-            try {
-                await apiClient.deleteResume(id);
-                setSyncStatus('idle');
-            } catch (e) {
-                console.error(e);
-                setSyncStatus('error');
-            }
+            try { await apiClient.createResumeEntry(newEntry); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
+        return newEntry;
+    };
+
+    const updateResumeEntry = async (id: string, updates: Partial<ResumeEntry>) => {
+        setResumeEntries(prev => prev.map(en => en.id === id ? { ...en, ...updates } : en));
+
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.updateResumeEntry(id, updates); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
+    };
+
+    const deleteResumeEntry = async (id: string) => {
+        setResumeEntries(prev => prev.filter(en => en.id !== id));
+        setResumeLines(prev => prev.filter(l => l.entryId !== id)); // mirror ON DELETE CASCADE locally
+
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.deleteResumeEntry(id); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
+    };
+
+    const addResumeLine = async (lineData: Omit<ResumeLine, 'id'>): Promise<ResumeLine> => {
+        const newLine: ResumeLine = { ...lineData, id: generateId() };
+        setResumeLines(prev => [...prev, newLine]);
+
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.createResumeLine(newLine); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
+        return newLine;
+    };
+
+    const updateResumeLine = async (id: string, updates: Partial<ResumeLine>) => {
+        setResumeLines(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.updateResumeLine(id, updates); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
+    };
+
+    const deleteResumeLine = async (id: string) => {
+        setResumeLines(prev => prev.filter(l => l.id !== id));
+
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.deleteResumeLine(id); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
+        }
+    };
+
+    const saveResumeGeneration = async (jobId: string, selectedLineIds: string[], renderedMarkdown: string) => {
+        const now = new Date().toISOString();
+        setResumeGenerations(prev => {
+            const existing = prev.find(g => g.jobId === jobId);
+            const generation: ResumeGeneration = { jobId, selectedLineIds, renderedMarkdown, createdAt: existing?.createdAt ?? now, updatedAt: now };
+            return existing ? prev.map(g => g.jobId === jobId ? generation : g) : [...prev, generation];
+        });
+
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try { await apiClient.saveResumeGeneration(jobId, { selectedLineIds, renderedMarkdown }); setSyncStatus('idle'); }
+            catch (e) { console.error(e); setSyncStatus('error'); }
         }
     };
 
@@ -462,7 +573,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const importData = (data: any) => {
         if (data.jobs) setJobs(data.jobs);
         if (data.notes) setNotes(data.notes);
-        if (data.resumes) setResumes(data.resumes);
+        if (data.resumeTextBlocks) setResumeTextBlocks(data.resumeTextBlocks);
+        if (data.resumeEntries) setResumeEntries(data.resumeEntries);
+        if (data.resumeLines) setResumeLines(data.resumeLines);
         if (data.preferences) setPreferences(data.preferences);
         if (data.contextResources) setContextResources(data.contextResources);
     };
@@ -470,24 +583,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Expose API to window for MCP / external tools
     useEffect(() => {
         window.GetTheJobAPI = {
-            getState: () => ({ jobs, notes, resumes, preferences, contextResources }),
+            getState: () => ({ jobs, notes, resumeTextBlocks, resumeEntries, resumeLines, preferences, contextResources }),
             importData,
             addJob,
             updateJob,
             deleteJob,
             addNote,
-            addResume,
-            updateResume,
             addContextResource
         };
-    }, [jobs, notes, resumes, preferences, contextResources]);
+    }, [jobs, notes, resumeTextBlocks, resumeEntries, resumeLines, preferences, contextResources]);
 
     return (
         <AppContext.Provider value={{
-            jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, jobSources,
+            jobs, notes,
+            resumeSections, resumeCharBudget, resumeTextBlocks, resumeEntries, resumeLines, resumeGenerations, resumeRawImport, resumeMarkdown,
+            preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, jobSources,
             currentView, selectedJobId, dbConfig, syncStatus,
             addJob, updateJob, deleteJob, addNote, deleteNote,
-            addResume, updateResume, deleteResume, updatePreferences: updatePreferencesState,
+            updateResumeText, saveResumeRawImport,
+            addResumeEntry, updateResumeEntry, deleteResumeEntry,
+            addResumeLine, updateResumeLine, deleteResumeLine,
+            saveResumeGeneration,
+            updatePreferences: updatePreferencesState,
             addContextResource, deleteContextResource,
             addJournalEntry, updateJournalEntry, deleteJournalEntry,
             addInterviewQuestion, updateInterviewQuestion, deleteInterviewQuestion,

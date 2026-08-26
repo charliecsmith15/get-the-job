@@ -17,7 +17,7 @@ steps:
           --allow-unauthenticated \
           --port 8080 \
           --add-cloudsql-instances "${_INSTANCE_CONNECTION_NAME}" \
-          --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION},INSTANCE_CONNECTION_NAME=${_INSTANCE_CONNECTION_NAME},DB_NAME=${_DB_NAME},DB_USER=${_DB_USER}" \
+          --set-env-vars "GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION},INSTANCE_CONNECTION_NAME=${_INSTANCE_CONNECTION_NAME},DB_NAME=${_DB_NAME},DB_USER=${_DB_USER},GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID},ALLOWED_EMAILS=${_ALLOWED_EMAILS}" \
           --set-secrets "PROXY_HEADER=proxy-header:latest,DB_PASS=db-jobsearch-charlie-pass:latest"
 
 images:
@@ -28,6 +28,13 @@ substitutions:
   _INSTANCE_CONNECTION_NAME: ''
   _DB_NAME: jobsearch
   _DB_USER: jobsearch
+  # Must match frontend's GOOGLE_CLIENT_ID exactly — it's the OAuth audience
+  # the backend verifies Google ID tokens against.
+  _GOOGLE_CLIENT_ID: '948539209903-qku75f835du8coue8a6ld6g29aocif8k.apps.googleusercontent.com'
+  # Comma-separated list of emails allowed to sign in. Include your demo
+  # account's email here once you've created it.
+  _ALLOWED_EMAILS: 'charlie@workbench-data.com,rankin@workbench-data.com'
+
 
 options:
   logging: CLOUD_LOGGING_ONLY

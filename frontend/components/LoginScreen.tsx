@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 interface Props {
     clientId: string;
-    onSignIn: (email: string) => void;
+    onSignIn: (email: string, idToken: string) => void;
 }
 
 export const LoginScreen: React.FC<Props> = ({ clientId, onSignIn }) => {
@@ -25,7 +25,10 @@ export const LoginScreen: React.FC<Props> = ({ clientId, onSignIn }) => {
             client_id: clientId,
             callback: (response: any) => {
                 const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                onSignIn(payload.email);
+                // response.credential is the signed Google ID token — pass it
+                // through so every backend request can be verified server-side,
+                // not just trusted based on the decoded (unverified) email.
+                onSignIn(payload.email, response.credential);
             },
         });
         g.renderButton(document.getElementById('google-signin-btn'), {

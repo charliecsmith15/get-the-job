@@ -7,7 +7,7 @@ import { Job } from '../types';
 
 export const JobDetail: React.FC = () => {
     const { jobs, notes, resumes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, addResume, setJobAnalysis, jobSources } = useAppStore();
-    const [activeTab, setActiveTab] = useState<'details' | 'notes' | 'ai'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'ai' | 'notes'>('details');
     
     // Edit State
     const [isEditing, setIsEditing] = useState(false);
@@ -30,6 +30,15 @@ export const JobDetail: React.FC = () => {
 
     const job = jobs.find(j => j.id === selectedJobId);
     const jobNotes = notes.filter(n => n.jobId === selectedJobId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    useEffect(() => {
+        if (!job?.description || jobAnalyses[job.id]) return;
+        setIsAnalyzing(true);
+        analyzeJobMatch(job.description, preferences, contextResources, journalEntries)
+            .then(result => setJobAnalysis(job.id, result))
+            .catch(() => {})
+            .finally(() => setIsAnalyzing(false));
+    }, [job?.id]);
 
     if (!job) {
         return <div className="p-8 text-center text-taupe">Job not found. <Button variant="ghost" onClick={() => navigate('jobs')}>Go back</Button></div>;
@@ -199,8 +208,8 @@ export const JobDetail: React.FC = () => {
                 <div className="flex border-b border-sand mb-6">
                     {[
                         { id: 'details', label: 'Details', shortLabel: 'Details', icon: FileText },
-                        { id: 'notes', label: 'Notes & Events', shortLabel: 'Notes', icon: MessageSquare },
-                        { id: 'ai', label: 'AI Assistant', shortLabel: 'AI', icon: Sparkles }
+                        { id: 'ai', label: 'Match Insights', shortLabel: 'Insights', icon: Sparkles },
+                        { id: 'notes', label: 'Notes & Events', shortLabel: 'Notes', icon: MessageSquare }
                     ].map(tab => (
                         <button
                             key={tab.id}

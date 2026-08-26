@@ -23,7 +23,7 @@ function closePanel() {
 async function getActiveTab() {
   const params = new URLSearchParams(location.search);
   const url = params.get('url');
-  return url ? { url, utmSource: params.get('utmSource') || '' } : null;
+  return url ? { url, utmSource: params.get('utmSource') || '', description: params.get('description') || '' } : null;
 }
 
 document.getElementById('close').addEventListener('click', closePanel);
@@ -57,6 +57,7 @@ async function init() {
     if (tab) {
       document.getElementById('url').value = tab.url || '';
       if (tab.utmSource) document.getElementById('source').value = normalizeSource(tab.utmSource);
+      if (tab.description) document.getElementById('description').value = tab.description;
     }
 
     showState('form');

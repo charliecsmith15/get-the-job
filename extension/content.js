@@ -53,6 +53,45 @@ function extractJobTitle() {
     .trim();
 }
 
+function capWords(text, max) {
+  const words = text.split(/\s+/);
+  return words.length <= max ? text : words.slice(0, max).join(' ') + '…';
+}
+
+function extractJobDescription() {
+  // 1. JSON-LD description field — strip HTML tags via a temp element
+  for (const script of document.querySelectorAll('script[type="application/ld+json"]')) {
+    try {
+      const json = JSON.parse(script.textContent);
+      const find = (d) => {
+        if (!d) return null;
+        if (Array.isArray(d)) return d.map(find).find(Boolean) || null;
+        if (d['@type'] === 'JobPosting') return d;
+        if (d['@graph']) return find(d['@graph']);
+        return null;
+      };
+      const posting = find(json);
+      if (posting?.description) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = posting.description;
+        const text = tmp.textContent.replace(/\s+/g, ' ').trim();
+        if (text) return capWords(text, 500);
+      }
+    } catch {}
+  }
+
+  // 2. Text content of siblings after the job title h1
+  const titleH1 = [...document.querySelectorAll('h1')].find(el => !el.querySelector('a'));
+  if (titleH1?.parentElement) {
+    const siblings = [...titleH1.parentElement.children];
+    const afterTitle = siblings.slice(siblings.indexOf(titleH1) + 1);
+    const text = afterTitle.map(el => el.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n').trim();
+    if (text) return capWords(text, 500);
+  }
+
+  return '';
+}
+
 let panel = null;
 
 function removePanel() {
@@ -85,7 +124,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     cleanUrl = u.toString();
   } catch {}
 
-  const params = new URLSearchParams({ url: cleanUrl, utmSource });
+  const params = new URLSearchParams({ url: cleanUrl, utmSource, description: extractJobDescription() });
   panel = document.createElement('iframe');
   panel.src = `${chrome.runtime.getURL('popup.html')}?${params}`;
   panel.setAttribute('allowtransparency', 'true');

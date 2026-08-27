@@ -134,7 +134,7 @@ export const JobDetail: React.FC = () => {
 
         setIsTailoring(true);
         try {
-            const result = await tailorResumeSuggestion(job.description, resumeMarkdown, preferences, contextResources, journalEntries);
+            const result = await tailorResumeSuggestion(job.description, resumeMarkdown);
             setAiTailorAdvice(result);
         } catch (error) {
             alert("Failed to generate tailoring advice.");
@@ -542,7 +542,7 @@ export const JobDetail: React.FC = () => {
                                     className="w-full flex justify-between items-center px-6 py-4 text-left hover:bg-cream/50 transition-colors"
                                     onClick={() => setResumeEditsOpen(v => !v)}
                                 >
-                                    <h2 className="font-medium text-ink">What edits to my resume should I make to stand out?</h2>
+                                    <h2 className="font-medium text-ink">What particular edits should be made to my base resume?</h2>
                                     {resumeEditsOpen ? <ChevronUp className="w-4 h-4 text-taupe flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-taupe flex-shrink-0" />}
                                 </button>
                                 {resumeEditsOpen && (

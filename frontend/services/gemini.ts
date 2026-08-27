@@ -100,17 +100,17 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
     }
 };
 
-export const tailorResumeSuggestion = async (jobDescription: string, resumeMarkdown: string, preferences: Preferences, contextResources: ContextResource[], journalEntries: { date: string; content: string }[]) => {
+export const tailorResumeSuggestion = async (jobDescription: string, resumeMarkdown: string) => {
     const prompt = `
-    Review my resume against this job description and tell me exactly what to change to improve my chances. Be direct and specific — cite the job requirements and my resume content by name.
+Here is the candidate's current base resume:
 
-    ${buildFoundationalContext(preferences, contextResources, journalEntries, resumeMarkdown)}
+${resumeMarkdown}
 
-    Job Description:
-    ${jobDescription}
+Here is the job description they are applying to:
 
-    Resume Being Tailored:
-    ${resumeMarkdown}
+${jobDescription}
+
+Based solely on the resume content above and this job description, provide specific, prioritized edits the candidate should make to the wording and content of their resume to better match this role. Do not suggest any changes to formatting or structure — only content. Be direct and cite specific lines or sections from the resume by name.
     `;
 
     try {
@@ -118,7 +118,7 @@ export const tailorResumeSuggestion = async (jobDescription: string, resumeMarkd
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
-                systemInstruction: "You are an expert resume coach. Give direct, prioritized advice on what to change in this resume for this specific role. Use short sections with bullet points. Lead with the highest-impact edits. Do not give generic advice.",
+                systemInstruction: "Act as an experienced hiring manager, recruiter, and ATS optimization expert specializing in high-competition marketing roles.\nYour job is to help create highly tailored resumes for specific job descriptions that perform well with:\n- ATS / AI screening systems.\n- Recruiters doing fast initial screens.\n- Hiring managers reviewing for credibility, relevance, and seniority.\nOnly suggest changes to the content of the resume — never to its format or structure. Be specific and prioritized.",
             }
         });
         return response.text;

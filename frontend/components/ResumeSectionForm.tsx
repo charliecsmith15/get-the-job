@@ -256,7 +256,59 @@ export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobI
                     );
                 }
 
-                // list
+                // Additional Information — three fixed subcategories
+                if (section.id === 'skills') {
+                    const CATEGORIES = ['Skills', 'Tools', 'Certifications'];
+                    const allLines = byOrder(resumeLines.filter(l => l.sectionId === 'skills' && !l.entryId && !l.jobId));
+                    return (
+                        <div key={section.id}>
+                            <h3 className="text-sm font-semibold text-ink mb-2">{section.label}</h3>
+                            <Card className="p-4">
+                                <div className="space-y-3">
+                                    {CATEGORIES.map((category, idx) => {
+                                        const line = allLines.find(l => l.content.startsWith(`${category}:`));
+                                        const lineItems = line ? line.content.slice(category.length + 1).trimStart() : '';
+                                        const draftVal = newLineDrafts[`skills_${category}`] || '';
+                                        const displayValue = line ? lineItems : draftVal;
+
+                                        const handleChange = (val: string) => {
+                                            if (line) {
+                                                updateResumeLine(line.id, { content: `${category}: ${val}` });
+                                            } else {
+                                                setNewLineDrafts(prev => ({ ...prev, [`skills_${category}`]: val }));
+                                            }
+                                        };
+
+                                        const handleCommit = (val: string) => {
+                                            if (line && val.trim() === '') {
+                                                deleteResumeLine(line.id);
+                                            } else if (!line && val.trim()) {
+                                                addResumeLine({ sectionId: 'skills', entryId: null, jobId: null, content: `${category}: ${val.trim()}`, order: idx });
+                                                setNewLineDrafts(prev => ({ ...prev, [`skills_${category}`]: '' }));
+                                            }
+                                        };
+
+                                        return (
+                                            <div key={category} className="flex items-center gap-3">
+                                                <span className="text-xs font-semibold text-ink w-24 shrink-0">{category}</span>
+                                                <input
+                                                    className="flex-1 px-2 py-1 border border-sand rounded text-xs bg-paper text-ink crm-focus"
+                                                    placeholder="comma separated items..."
+                                                    value={displayValue}
+                                                    onChange={e => handleChange(e.target.value)}
+                                                    onBlur={e => handleCommit(e.target.value)}
+                                                    onKeyDown={e => e.key === 'Enter' && handleCommit((e.target as HTMLInputElement).value)}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </Card>
+                        </div>
+                    );
+                }
+
+                // generic list fallback
                 const sectionLines = byOrder(resumeLines.filter(l => l.sectionId === section.id && !l.entryId && !l.jobId));
                 const key = draftKey(section.id);
                 return (

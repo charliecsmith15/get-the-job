@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Badge, Textarea, Input, renderBold, renderMarkdown } from '../components/UI';
 import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X, ScrollText, Mic, ChevronDown, ChevronUp } from 'lucide-react';
-import { analyzeJobMatch, generateInterviewQuestions, selectResumeLines, getRelevantTechnicalQuestions } from '../services/gemini';
+import { analyzeJobMatch, generateInterviewQuestions, selectResumeLines, getRelevantTechnicalQuestions, RESUME_ADVICE_SYSTEM_INSTRUCTION, RESUME_ADVICE_USER_PROMPT } from '../services/gemini';
 import { renderResumeMarkdown, trimToBudget, getCandidateLines } from '../services/resumeRenderer';
 import { downloadResume, DownloadFormat } from '../services/resumeDownload';
 import { ResumeSectionForm } from '../components/ResumeSectionForm';
@@ -164,6 +164,7 @@ export const JobDetail: React.FC = () => {
 
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
     const [resumeEditsOpen, setResumeEditsOpen] = useState(true);
+    const [promptOpen, setPromptOpen] = useState(false);
 
     const handleExportGeneratedResume = (format: DownloadFormat) => {
         if (!generatedMarkdown) return;
@@ -539,6 +540,28 @@ export const JobDetail: React.FC = () => {
                                 )}
                             </Card>
                         )}
+
+                        <Card className="p-0 overflow-hidden">
+                            <button
+                                className="w-full flex justify-between items-center px-6 py-4 text-left hover:bg-cream/50 transition-colors"
+                                onClick={() => setPromptOpen(v => !v)}
+                            >
+                                <h2 className="font-medium text-ink">Prompt sent to Gemini</h2>
+                                {promptOpen ? <ChevronUp className="w-4 h-4 text-taupe flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-taupe flex-shrink-0" />}
+                            </button>
+                            {promptOpen && (
+                                <div className="mx-6 mb-5 space-y-3">
+                                    <div>
+                                        <p className="text-xs font-semibold text-taupe uppercase tracking-wide mb-1">System instruction</p>
+                                        <pre className="text-xs text-ink bg-cream rounded-lg p-3 whitespace-pre-wrap font-mono">{RESUME_ADVICE_SYSTEM_INSTRUCTION}</pre>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold text-taupe uppercase tracking-wide mb-1">User prompt</p>
+                                        <pre className="text-xs text-ink bg-cream rounded-lg p-3 whitespace-pre-wrap font-mono">{RESUME_ADVICE_USER_PROMPT}</pre>
+                                    </div>
+                                </div>
+                            )}
+                        </Card>
 
                         <div className="space-y-6">
                             {/* Resume Tailoring */}

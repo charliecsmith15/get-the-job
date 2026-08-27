@@ -100,6 +100,15 @@ export const analyzeJobMatch = async (jobDescription: string, preferences: Prefe
     }
 };
 
+export const RESUME_ADVICE_SYSTEM_INSTRUCTION = `Act as an experienced hiring manager, recruiter, and ATS optimization expert specializing in high-competition marketing roles.
+Your job is to help create highly tailored resumes for specific job descriptions that perform well with:
+- ATS / AI screening systems.
+- Recruiters doing fast initial screens.
+- Hiring managers reviewing for credibility, relevance, and seniority.
+Only suggest changes to the content of the resume — never to its format or structure. Be specific and prioritized.`;
+
+export const RESUME_ADVICE_USER_PROMPT = `Based solely on the resume content and this job description, provide specific, prioritized edits the candidate should make to the wording and content of their resume to better match this role. Do not suggest any changes to formatting or structure — only content. Be direct and cite specific lines or sections from the resume by name.`;
+
 export const tailorResumeSuggestion = async (jobDescription: string, resumeMarkdown: string) => {
     const prompt = `
 Here is the candidate's current base resume:
@@ -110,16 +119,14 @@ Here is the job description they are applying to:
 
 ${jobDescription}
 
-Based solely on the resume content above and this job description, provide specific, prioritized edits the candidate should make to the wording and content of their resume to better match this role. Do not suggest any changes to formatting or structure — only content. Be direct and cite specific lines or sections from the resume by name.
+${RESUME_ADVICE_USER_PROMPT}
     `;
 
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
-            config: {
-                systemInstruction: "Act as an experienced hiring manager, recruiter, and ATS optimization expert specializing in high-competition marketing roles.\nYour job is to help create highly tailored resumes for specific job descriptions that perform well with:\n- ATS / AI screening systems.\n- Recruiters doing fast initial screens.\n- Hiring managers reviewing for credibility, relevance, and seniority.\nOnly suggest changes to the content of the resume — never to its format or structure. Be specific and prioritized.",
-            }
+            config: { systemInstruction: RESUME_ADVICE_SYSTEM_INSTRUCTION }
         });
         return response.text;
     } catch (error) {

@@ -36,8 +36,8 @@ async function getSignedInEmail() {
   if (cached && Date.now() - cached.ts < EMAIL_CACHE_TTL) return cached.email;
 
   return new Promise((resolve) => {
-    chrome.identity.getProfileUserInfo({ accountStatus: 'ANY' }, async (info) => {
-      const email = info && info.email ? info.email.toLowerCase() : '';
+    chrome.runtime.sendMessage({ type: 'GET_PROFILE_EMAIL' }, async (response) => {
+      const email = response && response.email ? response.email : '';
       await chrome.storage.local.set({ [EMAIL_CACHE_KEY]: { email, ts: Date.now() } });
       resolve(email);
     });
@@ -108,11 +108,17 @@ async function init() {
     statusEl.textContent = 'Saving…';
     statusEl.className = '';
     try {
-      const idToken = await new Promise((resolve, reject) =>
-        chrome.identity.getAuthToken({ interactive: false }, (token) =>
-          chrome.runtime.lastError ? reject(chrome.runtime.lastError) : resolve(token)
-        )
-      );
+      const idToken = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ type: 'GET_AUTH_TOKEN' }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else if (response && response.error) {
+            reject(new Error(response.error));
+          } else {
+            resolve(response.token);
+          }
+        });
+      });
       await createJob(settings.backendUrl, job, idToken);
       statusEl.textContent = 'Saved to Get the Job!';
       statusEl.className = 'ok';

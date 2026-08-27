@@ -112,7 +112,8 @@ body {
 .edu-school { font-size: 10.5pt; margin: 0; padding: 0; }
 .edu-degree { font-size: 10.5pt; margin: 0; padding: 0; }
 .additional-info p { margin: 2px 0; font-size: 10.5pt; }
-@media print { body { padding: 0; } @page { margin: 0.85in 0.7in; } }
+@page { margin: 0.85in 0.7in; }
+@media print { body { padding: 0; } }
 `;
 
 function buildHTMLFromData(data: StructuredResumeData, title: string): string {

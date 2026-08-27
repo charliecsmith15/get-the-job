@@ -94,9 +94,10 @@ body {
 .entry-header {
     width: 100%;
     border-collapse: collapse;
+    border: none;
     font-size: 10.5pt;
 }
-.entry-header td { padding: 0; vertical-align: baseline; }
+.entry-header td { padding: 0; vertical-align: baseline; border: none; }
 .entry-heading { font-weight: bold; }
 .entry-date {
     text-align: right;

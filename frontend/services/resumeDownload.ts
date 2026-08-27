@@ -150,8 +150,7 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
             if (!content) continue;
 
             bodyParts.push(
-                `<div class="section-header">${escapeHTML(section.label.toUpperCase())}</div>` +
-                `<hr class="section-rule">` +
+                `<table class="section-head"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
                 `<p class="section-text">${escapeHTML(content)}</p>`
             );
             continue;
@@ -211,8 +210,7 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
 
             const lineItems = sectionLines.map(l => `<p>${formatCategoryLine(l.content)}</p>`).join('');
             bodyParts.push(
-                `<div class="section-header">${escapeHTML(section.label.toUpperCase())}</div>` +
-                `<hr class="section-rule">` +
+                `<table class="section-head"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
                 `<div class="additional-info">${lineItems}</div>`
             );
         }

@@ -87,20 +87,17 @@ body {
 }
 .section-text { font-size: 10.5pt; margin: 0 0 6px 0; }
 .exp-entry { margin-bottom: 14pt; }
-.entry-header {
-    width: 100%;
-    border-collapse: collapse;
-    border: none;
+.entry-heading {
+    font-weight: bold;
     font-size: 10.5pt;
+    margin: 0;
+    padding: 0;
 }
-.entry-header td { padding: 0; vertical-align: baseline; border: none; }
-.entry-heading { font-weight: bold; }
 .entry-date {
-    text-align: right;
-    white-space: nowrap;
+    float: right;
     font-weight: normal;
-    width: 1%;
-    padding-left: 8px !important;
+    font-size: 10.5pt;
+    white-space: nowrap;
 }
 .entry-location { font-size: 10.5pt; margin-bottom: 0; }
 .exp-entry ul { margin: 0 0 0 0.25in; list-style-type: disc; }
@@ -178,10 +175,10 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
 
                 entryBlocks.push(
                     `<div class="exp-entry">` +
-                    `<table class="entry-header" border="0"><tr>` +
-                    `<td class="entry-heading">${escapeHTML(heading)}</td>` +
-                    (dateRange ? `<td class="entry-date">${escapeHTML(dateRange)}</td>` : '') +
-                    `</tr></table>` +
+                    `<p class="entry-heading">` +
+                    (dateRange ? `<span class="entry-date">${escapeHTML(dateRange)}</span>` : '') +
+                    escapeHTML(heading) +
+                    `</p>` +
                     (entry.location ? `<div class="entry-location">${escapeHTML(entry.location)}</div>` : '') +
                     `<ul>${bulletItems}</ul>` +
                     `</div>`
@@ -253,7 +250,7 @@ function markdownToHTML(md: string): string {
         } else if (/ \|\|\| /.test(line)) {
             flushList();
             const [left, right] = line.split(' ||| ');
-            out.push(`<table class="entry-header" border="0"><tr><td class="entry-heading">${inlineFormat(left)}</td><td class="entry-date">${escapeHTMLInline(right.trim())}</td></tr></table>`);
+            out.push(`<p class="entry-heading"><span class="entry-date">${escapeHTMLInline(right.trim())}</span>${inlineFormat(left)}</p>`);
         } else if (/^:: /.test(line)) {
             flushList();
             out.push(`<div class="entry-location">${inlineFormat(line.slice(3))}</div>`);

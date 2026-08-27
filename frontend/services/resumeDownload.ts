@@ -79,6 +79,7 @@ body {
 .section-head {
     width: 100%;
     border-collapse: collapse;
+    border: none;
     margin-top: 14pt;
     margin-bottom: 0;
 }
@@ -87,6 +88,9 @@ body {
     font-size: 10.5pt;
     text-transform: uppercase;
     letter-spacing: 0.01em;
+    border-top: none;
+    border-left: none;
+    border-right: none;
     border-bottom: 1.5pt solid #000;
     padding: 0 0 1pt 0;
     margin: 0;
@@ -150,7 +154,7 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
             if (!content) continue;
 
             bodyParts.push(
-                `<table class="section-head"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
+                `<table class="section-head" border="0"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
                 `<p class="section-text">${escapeHTML(content)}</p>`
             );
             continue;
@@ -184,7 +188,7 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
 
                 entryBlocks.push(
                     `<div class="exp-entry">` +
-                    `<table class="entry-header"><tr>` +
+                    `<table class="entry-header" border="0"><tr>` +
                     `<td class="entry-heading">${escapeHTML(heading)}</td>` +
                     (dateRange ? `<td class="entry-date">${escapeHTML(dateRange)}</td>` : '') +
                     `</tr></table>` +
@@ -196,7 +200,7 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
 
             if (entryBlocks.length) {
                 bodyParts.push(
-                    `<table class="section-head"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
+                    `<table class="section-head" border="0"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
                     `<div class="entries">${entryBlocks.join('')}</div>`
                 );
             }
@@ -210,7 +214,7 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
 
             const lineItems = sectionLines.map(l => `<p>${formatCategoryLine(l.content)}</p>`).join('');
             bodyParts.push(
-                `<table class="section-head"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
+                `<table class="section-head" border="0"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
                 `<div class="additional-info">${lineItems}</div>`
             );
         }
@@ -255,11 +259,11 @@ function markdownToHTML(md: string): string {
         const line = raw.trimEnd();
         if (/^## /.test(line)) {
             flushList();
-            out.push(`<table class="section-head"><tr><td>${inlineFormat(line.slice(3))}</td></tr></table>`);
+            out.push(`<table class="section-head" border="0"><tr><td>${inlineFormat(line.slice(3))}</td></tr></table>`);
         } else if (/ \|\|\| /.test(line)) {
             flushList();
             const [left, right] = line.split(' ||| ');
-            out.push(`<table class="entry-header"><tr><td class="entry-heading">${inlineFormat(left)}</td><td class="entry-date">${escapeHTMLInline(right.trim())}</td></tr></table>`);
+            out.push(`<table class="entry-header" border="0"><tr><td class="entry-heading">${inlineFormat(left)}</td><td class="entry-date">${escapeHTMLInline(right.trim())}</td></tr></table>`);
         } else if (/^:: /.test(line)) {
             flushList();
             out.push(`<div class="entry-location">${inlineFormat(line.slice(3))}</div>`);

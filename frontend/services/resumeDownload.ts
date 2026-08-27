@@ -76,18 +76,20 @@ body {
     margin-bottom: 14px;
 }
 .header-contact a { color: #0563C1; text-decoration: underline; }
-.section-header {
+.section-head {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14pt;
+    margin-bottom: 5pt;
+}
+.section-head td {
     font-weight: bold;
     font-size: 10.5pt;
     text-transform: uppercase;
-    margin-top: 14px;
-    margin-bottom: 0;
     letter-spacing: 0.01em;
-}
-.section-rule {
-    border: none;
-    border-top: 1.5px solid #000;
-    margin: 0 0 6px;
+    border-bottom: 1.5pt solid #000;
+    padding: 0 0 1pt 0;
+    margin: 0;
 }
 .section-text { font-size: 10.5pt; margin-bottom: 6px; }
 .exp-entry { margin-bottom: 14pt; }
@@ -195,8 +197,7 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
 
             if (entryBlocks.length) {
                 bodyParts.push(
-                    `<div class="section-header">${escapeHTML(section.label.toUpperCase())}</div>` +
-                    `<hr class="section-rule">` +
+                    `<table class="section-head"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
                     `<div class="entries">${entryBlocks.join('')}</div>`
                 );
             }
@@ -256,7 +257,7 @@ function markdownToHTML(md: string): string {
         const line = raw.trimEnd();
         if (/^## /.test(line)) {
             flushList();
-            out.push(`<div class="section-header">${inlineFormat(line.slice(3))}</div><hr class="section-rule">`);
+            out.push(`<table class="section-head"><tr><td>${inlineFormat(line.slice(3))}</td></tr></table>`);
         } else if (/ \|\|\| /.test(line)) {
             flushList();
             const [left, right] = line.split(' ||| ');

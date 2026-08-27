@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useRef, ReactNode, useEffect, useMemo } from 'react';
 import { Job, JobAnalysis, Note, Preferences, ContextResource, ViewState, DbConfig, SyncStatus, JournalEntry, InterviewQuestion, JobSource, ResumeSectionConfig, ResumeTextBlock, ResumeEntry, ResumeLine, ResumeGeneration } from './types';
 import { createApiClient } from './services/api';
 import { renderResumeMarkdown } from './services/resumeRenderer';
@@ -14,6 +14,7 @@ interface AppState {
     resumeGenerations: ResumeGeneration[];
     resumeRawImport: string | null;
     resumeMarkdown: string;
+    resumeIsDirty: boolean;
     preferences: Preferences;
     contextResources: ContextResource[];
     journalEntries: JournalEntry[];
@@ -40,6 +41,7 @@ interface AppContextType extends AppState {
     addResumeLine: (line: Omit<ResumeLine, 'id'>) => Promise<ResumeLine>;
     updateResumeLine: (id: string, updates: Partial<ResumeLine>) => void;
     deleteResumeLine: (id: string) => void;
+    saveResume: () => Promise<void>;
     saveResumeGeneration: (jobId: string, selectedLineIds: string[], renderedMarkdown: string) => void;
     updatePreferences: (prefs: Preferences) => void;
     addContextResource: (resource: Omit<ContextResource, 'id' | 'dateAdded'>) => void;
@@ -147,6 +149,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [currentView, setCurrentView] = useState<ViewState>('dashboard');
     const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
     
+    const [resumeIsDirty, setResumeIsDirty] = useState(false);
+    // IDs that exist in the DB — populated on load, updated after saveResume
+    const committedEntryIds = useRef<Set<string>>(new Set());
+    const committedLineIds = useRef<Set<string>>(new Set());
+    // Baseline entries/lines deleted locally but not yet DELETEd from DB
+    const pendingDeleteEntryIds = useRef<string[]>([]);
+    const pendingDeleteLineIds = useRef<string[]>([]);
+
     const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
     const [dbConfig, setDbConfig] = useState<DbConfig>(() => {
         const saved = localStorage.getItem('getthejob_db_config');
@@ -203,7 +213,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 if (iq.length) setInterviewQuestions(iq);
                 if (ja.length) setJobAnalyses(ja);
                 if (rc) { setResumeSections(rc.sections); setResumeCharBudget(rc.totalCharBudget); }
-                if (r) { setResumeTextBlocks(r.textBlocks); setResumeEntries(r.entries); setResumeLines(r.lines); }
+                if (r) {
+                    setResumeTextBlocks(r.textBlocks);
+                    setResumeEntries(r.entries);
+                    setResumeLines(r.lines);
+                    committedEntryIds.current = new Set(r.entries.map((e: ResumeEntry) => e.id));
+                    committedLineIds.current = new Set(r.lines.map((l: ResumeLine) => l.id));
+                }
                 if (rg.length) setResumeGenerations(rg);
                 if (ri) setResumeRawImport(ri.content);
                 setSyncStatus('idle');
@@ -305,19 +321,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    const updateResumeText = async (sectionId: string, content: string) => {
+    const updateResumeText = (sectionId: string, content: string) => {
         const updatedAt = new Date().toISOString();
         setResumeTextBlocks(prev =>
             prev.find(t => t.sectionId === sectionId)
                 ? prev.map(t => t.sectionId === sectionId ? { ...t, content, updatedAt } : t)
                 : [...prev, { sectionId, content, updatedAt }]
         );
-
-        if (dbConfig.enabled) {
-            setSyncStatus('syncing');
-            try { await apiClient.updateResumeText(sectionId, content); setSyncStatus('idle'); }
-            catch (e) { console.error(e); setSyncStatus('error'); }
-        }
+        setResumeIsDirty(true);
     };
 
     const saveResumeRawImport = async (content: string) => {
@@ -333,65 +344,105 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const addResumeEntry = async (entryData: Omit<ResumeEntry, 'id'>): Promise<ResumeEntry> => {
         const newEntry: ResumeEntry = { ...entryData, id: generateId() };
         setResumeEntries(prev => [...prev, newEntry]);
-
-        if (dbConfig.enabled) {
-            setSyncStatus('syncing');
-            try { await apiClient.createResumeEntry(newEntry); setSyncStatus('idle'); }
-            catch (e) { console.error(e); setSyncStatus('error'); }
-        }
+        setResumeIsDirty(true);
         return newEntry;
     };
 
-    const updateResumeEntry = async (id: string, updates: Partial<ResumeEntry>) => {
+    const updateResumeEntry = (id: string, updates: Partial<ResumeEntry>) => {
         setResumeEntries(prev => prev.map(en => en.id === id ? { ...en, ...updates } : en));
-
-        if (dbConfig.enabled) {
-            setSyncStatus('syncing');
-            try { await apiClient.updateResumeEntry(id, updates); setSyncStatus('idle'); }
-            catch (e) { console.error(e); setSyncStatus('error'); }
-        }
+        setResumeIsDirty(true);
     };
 
-    const deleteResumeEntry = async (id: string) => {
+    const deleteResumeEntry = (id: string) => {
+        // Also queue any committed lines belonging to this entry for deletion
+        resumeLines.filter(l => l.entryId === id && !l.jobId).forEach(l => {
+            if (committedLineIds.current.has(l.id)) pendingDeleteLineIds.current.push(l.id);
+        });
         setResumeEntries(prev => prev.filter(en => en.id !== id));
-        setResumeLines(prev => prev.filter(l => l.entryId !== id)); // mirror ON DELETE CASCADE locally
-
-        if (dbConfig.enabled) {
-            setSyncStatus('syncing');
-            try { await apiClient.deleteResumeEntry(id); setSyncStatus('idle'); }
-            catch (e) { console.error(e); setSyncStatus('error'); }
-        }
+        setResumeLines(prev => prev.filter(l => l.entryId !== id));
+        if (committedEntryIds.current.has(id)) pendingDeleteEntryIds.current.push(id);
+        setResumeIsDirty(true);
     };
 
     const addResumeLine = async (lineData: Omit<ResumeLine, 'id'>): Promise<ResumeLine> => {
         const newLine: ResumeLine = { ...lineData, id: generateId() };
         setResumeLines(prev => [...prev, newLine]);
 
-        if (dbConfig.enabled) {
-            setSyncStatus('syncing');
-            try { await apiClient.createResumeLine(newLine); setSyncStatus('idle'); }
-            catch (e) { console.error(e); setSyncStatus('error'); }
+        if (lineData.jobId) {
+            // Per-job line (from JobDetail): sync immediately
+            if (dbConfig.enabled) {
+                setSyncStatus('syncing');
+                try { await apiClient.createResumeLine(newLine); setSyncStatus('idle'); }
+                catch (e) { console.error(e); setSyncStatus('error'); }
+            }
+        } else {
+            setResumeIsDirty(true);
         }
         return newLine;
     };
 
-    const updateResumeLine = async (id: string, updates: Partial<ResumeLine>) => {
+    const updateResumeLine = (id: string, updates: Partial<ResumeLine>) => {
         setResumeLines(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
-
-        if (dbConfig.enabled) {
-            setSyncStatus('syncing');
-            try { await apiClient.updateResumeLine(id, updates); setSyncStatus('idle'); }
-            catch (e) { console.error(e); setSyncStatus('error'); }
-        }
+        setResumeIsDirty(true);
     };
 
     const deleteResumeLine = async (id: string) => {
+        const line = resumeLines.find(l => l.id === id);
         setResumeLines(prev => prev.filter(l => l.id !== id));
 
-        if (dbConfig.enabled) {
-            setSyncStatus('syncing');
-            try { await apiClient.deleteResumeLine(id); setSyncStatus('idle'); }
-            catch (e) { console.error(e); setSyncStatus('error'); }
+        if (line?.jobId) {
+            // Per-job line: sync immediately
+            if (dbConfig.enabled) {
+                setSyncStatus('syncing');
+                try { await apiClient.deleteResumeLine(id); setSyncStatus('idle'); }
+                catch (e) { console.error(e); setSyncStatus('error'); }
+            }
+        } else {
+            if (committedLineIds.current.has(id)) pendingDeleteLineIds.current.push(id);
+            setResumeIsDirty(true);
+        }
+    };
+
+    const saveResume = async () => {
+        if (!dbConfig.enabled) { setResumeIsDirty(false); return; }
+        setSyncStatus('syncing');
+        try {
+            for (const tb of resumeTextBlocks) {
+                await apiClient.updateResumeText(tb.sectionId, tb.content);
+            }
+            for (const entry of resumeEntries) {
+                if (committedEntryIds.current.has(entry.id)) {
+                    await apiClient.updateResumeEntry(entry.id, entry);
+                } else {
+                    await apiClient.createResumeEntry(entry);
+                    committedEntryIds.current.add(entry.id);
+                }
+            }
+            for (const id of pendingDeleteEntryIds.current) {
+                await apiClient.deleteResumeEntry(id);
+                committedEntryIds.current.delete(id);
+            }
+            pendingDeleteEntryIds.current = [];
+
+            for (const line of resumeLines.filter(l => !l.jobId)) {
+                if (committedLineIds.current.has(line.id)) {
+                    await apiClient.updateResumeLine(line.id, line);
+                } else {
+                    await apiClient.createResumeLine(line);
+                    committedLineIds.current.add(line.id);
+                }
+            }
+            for (const id of pendingDeleteLineIds.current) {
+                await apiClient.deleteResumeLine(id);
+                committedLineIds.current.delete(id);
+            }
+            pendingDeleteLineIds.current = [];
+
+            setResumeIsDirty(false);
+            setSyncStatus('idle');
+        } catch (e) {
+            console.error(e);
+            setSyncStatus('error');
         }
     };
 
@@ -596,14 +647,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return (
         <AppContext.Provider value={{
             jobs, notes,
-            resumeSections, resumeCharBudget, resumeTextBlocks, resumeEntries, resumeLines, resumeGenerations, resumeRawImport, resumeMarkdown,
+            resumeSections, resumeCharBudget, resumeTextBlocks, resumeEntries, resumeLines, resumeGenerations, resumeRawImport, resumeMarkdown, resumeIsDirty,
             preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, jobSources,
             currentView, selectedJobId, dbConfig, syncStatus,
             addJob, updateJob, deleteJob, addNote, deleteNote,
             updateResumeText, saveResumeRawImport,
             addResumeEntry, updateResumeEntry, deleteResumeEntry,
             addResumeLine, updateResumeLine, deleteResumeLine,
-            saveResumeGeneration,
+            saveResume, saveResumeGeneration,
             updatePreferences: updatePreferencesState,
             addContextResource, deleteContextResource,
             addJournalEntry, updateJournalEntry, deleteJournalEntry,

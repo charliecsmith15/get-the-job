@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Textarea } from '../components/UI';
-import { FileText, Upload, Loader2 } from 'lucide-react';
+import { FileText, Upload, Loader2, Save } from 'lucide-react';
 import { ResumeSectionForm } from '../components/ResumeSectionForm';
 import { parseResumeIntoSections } from '../services/gemini';
 
@@ -9,12 +9,14 @@ export const ResumeManager: React.FC = () => {
     const {
         resumeSections, resumeTextBlocks, resumeEntries, resumeLines, resumeRawImport,
         saveResumeRawImport, updateResumeText, addResumeEntry, addResumeLine,
+        resumeIsDirty, saveResume,
     } = useAppStore();
 
     const hasContent = resumeTextBlocks.length > 0 || resumeEntries.length > 0 || resumeLines.length > 0;
     const [showImport, setShowImport] = useState(!hasContent);
     const [rawText, setRawText] = useState(resumeRawImport || '');
     const [isParsing, setIsParsing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleParse = async () => {
         if (!rawText.trim()) return;
@@ -54,11 +56,36 @@ export const ResumeManager: React.FC = () => {
         }
     };
 
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            await saveResume();
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <div className="max-w-4xl mx-auto crm-enter duration-500 pb-12">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-ink">Resume</h1>
-                <p className="text-taupe text-sm mt-1">Your single resume, broken into sections. Tailor it per job from that job's page.</p>
+            <div className="mb-6 flex items-start justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-ink">Resume</h1>
+                    <p className="text-taupe text-sm mt-1">Your single resume, broken into sections. Tailor it per job from that job's page.</p>
+                </div>
+                {hasContent && (
+                    <div className="flex items-center gap-3 mt-1">
+                        {resumeIsDirty && !isSaving && (
+                            <span className="text-xs text-amber-600 font-medium">Unsaved changes</span>
+                        )}
+                        <Button
+                            icon={isSaving ? undefined : Save}
+                            onClick={handleSave}
+                            disabled={isSaving || !resumeIsDirty}
+                        >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                        </Button>
+                    </div>
+                )}
             </div>
 
             {!hasContent && !showImport ? null : showImport ? (

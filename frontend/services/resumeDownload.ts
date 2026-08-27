@@ -112,6 +112,11 @@ body {
 .edu-school { font-size: 10.5pt; margin: 0; padding: 0; }
 .edu-degree { font-size: 10.5pt; margin: 0; padding: 0; }
 .additional-info p { margin: 2px 0; font-size: 10.5pt; }
+@page WordSection1 {
+    margin-top: 0.85in; margin-bottom: 0.85in;
+    margin-left: 0.7in; margin-right: 0.7in;
+}
+div.WordSection1 { page: WordSection1; }
 @page { margin: 0.85in 0.7in; }
 @media print { body { padding: 0; } }
 `;
@@ -212,14 +217,19 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
     }
 
     return `<!DOCTYPE html>
-<html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
 <head>
   <meta charset="utf-8">
   <title>${escapeHTML(title)}</title>
+  <xml><w:WordDocument><w:View>Normal</w:View></w:WordDocument></xml>
   <style>${RESUME_STYLES}</style>
 </head>
 <body>
+<div class="WordSection1">
 ${bodyParts.join('\n')}
+</div>
 </body>
 </html>`;
 }

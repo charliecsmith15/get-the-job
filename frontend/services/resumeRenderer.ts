@@ -15,6 +15,17 @@ export interface LineSelection {
 const byOrder = <T extends { order: number }>(items: T[]): T[] =>
     [...items].sort((a, b) => a.order - b.order);
 
+const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function parseDateVal(s?: string): number {
+    if (!s) return 0;
+    const parts = s.trim().toLowerCase().split(/\s+/);
+    const year = parseInt(parts.find(p => /^\d{4}$/.test(p)) ?? '0');
+    const mi = MONTHS.indexOf(parts.find(p => MONTHS.includes(p)) ?? '');
+    return year * 12 + (mi >= 0 ? mi : 0);
+}
+const byStartDateDesc = (a: ResumeEntry, b: ResumeEntry) =>
+    parseDateVal(b.startDate) - parseDateVal(a.startDate);
+
 export const getCandidateLines = (lines: ResumeLine[], jobId: string | null): ResumeLine[] =>
     lines.filter(l => !l.jobId || l.jobId === jobId);
 
@@ -48,7 +59,10 @@ export function renderResumeMarkdown(
         }
 
         if (section.type === 'entries') {
-            const sectionEntries = byOrder(entries.filter(e => e.sectionId === section.id));
+            const unsorted = byOrder(entries.filter(e => e.sectionId === section.id));
+            const sectionEntries = section.id === 'experience'
+                ? [...unsorted].sort(byStartDateDesc)
+                : unsorted;
             const entryBlocks: string[] = [];
 
             for (const entry of sectionEntries) {

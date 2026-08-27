@@ -14,6 +14,17 @@ export interface StructuredResumeData {
 const byOrder = <T extends { order: number }>(items: T[]): T[] =>
     [...items].sort((a, b) => a.order - b.order);
 
+const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function parseDateVal(s?: string): number {
+    if (!s) return 0;
+    const parts = s.trim().toLowerCase().split(/\s+/);
+    const year = parseInt(parts.find(p => /^\d{4}$/.test(p)) ?? '0');
+    const mi = MONTHS.indexOf(parts.find(p => MONTHS.includes(p)) ?? '');
+    return year * 12 + (mi >= 0 ? mi : 0);
+}
+const byStartDateDesc = (a: ResumeEntry, b: ResumeEntry) =>
+    parseDateVal(b.startDate) - parseDateVal(a.startDate);
+
 function escapeHTML(s: string): string {
     return s
         .replace(/&/g, '&amp;')
@@ -49,7 +60,7 @@ body {
     color: #000;
     max-width: 780px;
     margin: 0 auto;
-    padding: 48px 40px;
+    padding: 0.85in 0.7in;
     line-height: 1.4;
 }
 .header-name {
@@ -70,37 +81,38 @@ body {
     font-size: 10.5pt;
     text-transform: uppercase;
     margin-top: 14px;
-    margin-bottom: 1px;
+    margin-bottom: 0;
     letter-spacing: 0.01em;
 }
 .section-rule {
     border: none;
     border-top: 1.5px solid #000;
-    margin: 2px 0 6px;
+    margin: 0 0 6px;
 }
 .section-text { font-size: 10.5pt; margin-bottom: 6px; }
-.exp-entry { margin-bottom: 10px; }
+.exp-entry { margin-bottom: 14pt; }
 .entry-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+    width: 100%;
+    border-collapse: collapse;
     font-size: 10.5pt;
-    font-weight: bold;
 }
+.entry-header td { padding: 0; vertical-align: baseline; }
+.entry-heading { font-weight: bold; }
 .entry-date {
-    font-weight: normal;
-    font-size: 10.5pt;
+    text-align: right;
     white-space: nowrap;
-    margin-left: 8px;
+    font-weight: normal;
+    width: 1%;
+    padding-left: 8px !important;
 }
-.entry-location { font-size: 10.5pt; margin-bottom: 2px; }
-.exp-entry ul { margin: 3px 0 0 0.25in; list-style-type: disc; }
+.entry-location { font-size: 10.5pt; margin-bottom: 0; }
+.exp-entry ul { margin: 0 0 0 0.25in; list-style-type: disc; }
 .exp-entry li { margin: 1px 0; font-size: 10.5pt; }
 .edu-entry { margin-bottom: 6px; }
-.edu-school { font-size: 10.5pt; }
-.edu-degree { font-size: 10.5pt; }
+.edu-school { font-size: 10.5pt; margin: 0; padding: 0; }
+.edu-degree { font-size: 10.5pt; margin: 0; padding: 0; }
 .additional-info p { margin: 2px 0; font-size: 10.5pt; }
-@media print { body { padding: 0; } @page { margin: 1.5cm; } }
+@media print { body { padding: 0; } @page { margin: 0.85in 0.7in; } }
 `;
 
 function buildHTMLFromData(data: StructuredResumeData, title: string): string {
@@ -137,7 +149,10 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
         }
 
         if (section.type === 'entries') {
-            const sectionEntries = byOrder(entries.filter(e => e.sectionId === section.id));
+            const unsorted = byOrder(entries.filter(e => e.sectionId === section.id));
+            const sectionEntries = section.id === 'experience'
+                ? [...unsorted].sort(byStartDateDesc)
+                : unsorted;
             const entryBlocks: string[] = [];
 
             for (const entry of sectionEntries) {
@@ -161,9 +176,10 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
 
                 entryBlocks.push(
                     `<div class="exp-entry">` +
-                    `<div class="entry-header"><span>${escapeHTML(heading)}</span>` +
-                    (dateRange ? `<span class="entry-date">${escapeHTML(dateRange)}</span>` : '') +
-                    `</div>` +
+                    `<table class="entry-header"><tr>` +
+                    `<td class="entry-heading">${escapeHTML(heading)}</td>` +
+                    (dateRange ? `<td class="entry-date">${escapeHTML(dateRange)}</td>` : '') +
+                    `</tr></table>` +
                     (entry.location ? `<div class="entry-location">${escapeHTML(entry.location)}</div>` : '') +
                     `<ul>${bulletItems}</ul>` +
                     `</div>`
@@ -232,7 +248,7 @@ function markdownToHTML(md: string): string {
         } else if (/ \|\|\| /.test(line)) {
             flushList();
             const [left, right] = line.split(' ||| ');
-            out.push(`<div class="entry-header"><span>${inlineFormat(left)}</span><span class="entry-date">${escapeHTMLInline(right.trim())}</span></div>`);
+            out.push(`<table class="entry-header"><tr><td class="entry-heading">${inlineFormat(left)}</td><td class="entry-date">${escapeHTMLInline(right.trim())}</td></tr></table>`);
         } else if (/^:: /.test(line)) {
             flushList();
             out.push(`<div class="entry-location">${inlineFormat(line.slice(3))}</div>`);

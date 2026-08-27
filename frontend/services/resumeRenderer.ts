@@ -93,8 +93,12 @@ export function renderResumeMarkdown(
         }
 
         if (section.type === 'list') {
-            const sectionLines = byOrder(lines.filter(l => l.sectionId === section.id && !l.entryId))
+            const SKILL_CATS = ['skills:', 'tools:', 'certifications:'];
+            let sectionLines = byOrder(lines.filter(l => l.sectionId === section.id && !l.entryId))
                 .filter(l => !includedLineIds || includedLineIds.has(l.id));
+            if (section.id === 'skills') {
+                sectionLines = sectionLines.filter(l => SKILL_CATS.some(c => l.content.toLowerCase().startsWith(c)));
+            }
             if (sectionLines.length) {
                 const formatted = sectionLines.map(l => {
                     const colon = l.content.indexOf(':');

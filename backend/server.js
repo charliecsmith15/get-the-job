@@ -791,10 +791,25 @@ app.delete('/api/interview-questions/:id', async (req, res) => {
 });
 
 // Job Analyses
+function parseStoredArray(val) {
+  if (Array.isArray(val)) return val;
+  if (!val) return [];
+  const s = String(val);
+  try { return JSON.parse(s); } catch { /* fall through */ }
+  // Legacy: pg driver serialized a JS array into a PostgreSQL array literal {"item1","item2"}
+  if (s.startsWith('{') && s.endsWith('}')) {
+    return [...s.slice(1, -1).matchAll(/"((?:[^"\\]|\\.)*)"/g)].map(m => m[1]);
+  }
+  return [];
+}
 app.get('/api/job-analyses', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM job_analyses WHERE "accountId"=$1 ORDER BY "createdAt" DESC', [req.accountId]);
-    res.json(rows);
+    res.json(rows.map(r => ({
+      ...r,
+      fitReason: parseStoredArray(r.fitReason),
+      resumeEdits: parseStoredArray(r.resumeEdits),
+    })));
   } catch (e) { dbError(res, e); }
 });
 app.put('/api/job-analyses/:jobId', async (req, res) => {
@@ -805,7 +820,7 @@ app.put('/api/job-analyses/:jobId', async (req, res) => {
       `INSERT INTO job_analyses (id, "accountId", "jobId", score, pros, cons, "fitReason", "resumeEdits", "createdAt")
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [a.id, req.accountId, req.params.jobId, a.score, JSON.stringify(a.pros ?? []), JSON.stringify(a.cons ?? []),
-       a.fitReason, a.resumeEdits, a.createdAt]
+       JSON.stringify(a.fitReason ?? []), JSON.stringify(a.resumeEdits ?? []), a.createdAt]
     );
     res.status(204).end();
   } catch (e) { dbError(res, e); }

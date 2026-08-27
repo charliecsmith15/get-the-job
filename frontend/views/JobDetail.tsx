@@ -6,12 +6,13 @@ import { analyzeJobMatch, generateInterviewQuestions, selectResumeLines, getRele
 import { renderResumeMarkdown, trimToBudget, getCandidateLines } from '../services/resumeRenderer';
 import { downloadResume, DownloadFormat } from '../services/resumeDownload';
 import { ResumeSectionForm } from '../components/ResumeSectionForm';
-import { Job } from '../types';
+import { Job, ResumeEntry, ResumeLine } from '../types';
 
 export const JobDetail: React.FC = () => {
     const {
         jobs, notes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, setJobAnalysis, jobSources, addInterviewQuestion,
         accountProfile, resumeSections, resumeCharBudget, resumeTextBlocks, resumeEntries, resumeLines, resumeMarkdown, resumeGenerations, saveResumeGeneration,
+        addResumeLine, deleteResumeLine,
     } = useAppStore();
     const [activeTab, setActiveTab] = useState<'details' | 'ai' | 'resume' | 'interview' | 'notes'>('details');
     
@@ -33,12 +34,15 @@ export const JobDetail: React.FC = () => {
     const [relevantTechnicalIds, setRelevantTechnicalIds] = useState<string[] | null>(null);
     const [isCheckingRelevance, setIsCheckingRelevance] = useState(false);
     const [includedLineIds, setIncludedLineIds] = useState<Set<string> | null>(null);
+    const [tailoredSummary, setTailoredSummary] = useState('');
+    const [newBulletDrafts, setNewBulletDrafts] = useState<Record<string, string>>({});
+    const [stagedBullets, setStagedBullets] = useState<Record<string, string[]>>({});
 
     const job = jobs.find(j => j.id === selectedJobId);
     const jobNotes = notes.filter(n => n.jobId === selectedJobId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     useEffect(() => {
-        if (!job?.description || jobAnalyses[job.id]) return;
+        if (!job?.description || jobAnalyses.find(a => a.jobId === job.id)) return;
         setIsAnalyzing(true);
         analyzeJobMatch(job.description, preferences, contextResources, journalEntries, resumeMarkdown)
             .then(result => setJobAnalysis(job.id, result))
@@ -51,6 +55,11 @@ export const JobDetail: React.FC = () => {
     useEffect(() => {
         const existing = job ? resumeGenerations.find(g => g.jobId === job.id) : null;
         setIncludedLineIds(existing ? new Set(existing.selectedLineIds) : null);
+    }, [job?.id]);
+
+    useEffect(() => {
+        const baseline = resumeTextBlocks.find(t => t.sectionId === 'summary')?.content ?? '';
+        setTailoredSummary(job?.customFields?._tailoredSummary ?? baseline);
     }, [job?.id]);
 
     useEffect(() => {
@@ -73,16 +82,19 @@ export const JobDetail: React.FC = () => {
     const startEditing = () => {
         setEditForm(job);
         setTagsInput(job.tags?.join(', ') || '');
-        setCustomFieldsList(Object.entries(job.customFields || {}).map(([k, v]) => ({key: k, value: v})));
+        setCustomFieldsList(Object.entries(job.customFields || {}).filter(([k]) => !k.startsWith('_')).map(([k, v]) => ({key: k, value: v})));
         setIsEditing(true);
     };
 
     const handleSaveDetails = () => {
         const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
-        const customFields = customFieldsList.reduce((acc, curr) => {
-            if (curr.key.trim()) acc[curr.key.trim()] = curr.value;
-            return acc;
-        }, {} as Record<string, string>);
+        const customFields = {
+            ...customFieldsList.reduce((acc, curr) => {
+                if (curr.key.trim()) acc[curr.key.trim()] = curr.value;
+                return acc;
+            }, {} as Record<string, string>),
+            ...Object.fromEntries(Object.entries(job.customFields || {}).filter(([k]) => k.startsWith('_'))),
+        };
 
         updateJob(job.id, {
             ...editForm,
@@ -158,8 +170,11 @@ export const JobDetail: React.FC = () => {
         });
     };
 
+    const tailoredTextBlocks = resumeTextBlocks.map(t =>
+        t.sectionId === 'summary' && tailoredSummary ? { ...t, content: tailoredSummary } : t
+    );
     const generatedMarkdown = includedLineIds
-        ? renderResumeMarkdown(resumeSections, resumeTextBlocks, resumeEntries, resumeLines, includedLineIds, accountProfile)
+        ? renderResumeMarkdown(resumeSections, tailoredTextBlocks, resumeEntries, resumeLines, includedLineIds, accountProfile)
         : null;
 
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
@@ -177,10 +192,44 @@ export const JobDetail: React.FC = () => {
         setShowDownloadMenu(false);
     };
 
-    const handleSaveGeneratedResume = () => {
-        if (!includedLineIds || !generatedMarkdown) return;
-        saveResumeGeneration(job.id, Array.from(includedLineIds), generatedMarkdown);
+    const handleSaveGeneratedResume = async () => {
+        if (!includedLineIds) return;
+
+        const newLineIds = new Set(includedLineIds);
+        const extraLines: ResumeLine[] = [];
+        const hasStagedBullets = Object.values(stagedBullets).some(arr => arr.length > 0);
+
+        if (hasStagedBullets) {
+            for (const [entryId, bullets] of Object.entries(stagedBullets)) {
+                if (!bullets.length) continue;
+                const siblingLines = resumeLines.filter(l => l.sectionId === 'experience' && l.entryId === entryId);
+                for (let i = 0; i < bullets.length; i++) {
+                    const newLine = await addResumeLine({
+                        sectionId: 'experience',
+                        entryId,
+                        jobId: job.id,
+                        content: bullets[i],
+                        order: siblingLines.length + i,
+                    });
+                    newLineIds.add(newLine.id);
+                    extraLines.push(newLine);
+                }
+            }
+            setStagedBullets({});
+            setIncludedLineIds(newLineIds);
+        }
+
+        const allLines = extraLines.length ? [...resumeLines, ...extraLines] : resumeLines;
+        const markdownToSave = renderResumeMarkdown(resumeSections, tailoredTextBlocks, resumeEntries, allLines, newLineIds, accountProfile);
+        saveResumeGeneration(job.id, Array.from(newLineIds), markdownToSave);
         alert("Saved!");
+    };
+
+    const handleAddJobBullet = (entry: ResumeEntry) => {
+        const content = (newBulletDrafts[entry.id] || '').trim();
+        if (!content || content.length > 110) return;
+        setStagedBullets(prev => ({ ...prev, [entry.id]: [...(prev[entry.id] || []), content] }));
+        setNewBulletDrafts(prev => ({ ...prev, [entry.id]: '' }));
     };
 
     const rawAnalysis = jobAnalyses.find(a => a.jobId === job.id) ?? null;
@@ -563,84 +612,145 @@ export const JobDetail: React.FC = () => {
                             )}
                         </Card>
 
-                        <div className="space-y-6">
-                            {/* Resume Tailoring */}
-                            <Card className="p-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-lg font-semibold text-ink">Tailor Resume</h2>
-                                </div>
-                                <div className="space-y-4">
-                                    <div className="flex justify-end">
-                                        <Button variant="primary" onClick={handleGenerateResume} disabled={isGeneratingResume || !job.description}>
-                                            {isGeneratingResume ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Generate Resume'}
-                                        </Button>
-                                    </div>
+                        <Card className="p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-lg font-semibold text-ink">Tailor Resume</h2>
+                                <Button variant="primary" onClick={handleGenerateResume} disabled={isGeneratingResume || !job.description}>
+                                    {isGeneratingResume ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Generating...</> : 'Generate Resume'}
+                                </Button>
+                            </div>
 
-                                    {includedLineIds && (
-                                        <div className="crm-enter space-y-3">
-                                            <div className="flex justify-between items-center">
-                                                <span className={`text-xs font-medium ${(generatedMarkdown?.length || 0) > resumeCharBudget ? 'text-danger' : 'text-taupe'}`}>
-                                                    {generatedMarkdown?.length || 0} / {resumeCharBudget} characters
-                                                </span>
-                                                <div className="flex space-x-2">
-                                                    <Button variant="ghost" icon={Save} onClick={handleSaveGeneratedResume} title="Save" />
-                                                    <div className="relative">
-                                                        <Button variant="ghost" icon={Download} onClick={() => setShowDownloadMenu(v => !v)} title="Download resume" />
-                                                        {showDownloadMenu && (
-                                                            <div className="absolute right-0 bottom-full mb-1 bg-white border border-sand rounded-lg shadow-lg z-10 text-sm overflow-hidden">
-                                                                {(['md', 'pdf', 'doc'] as DownloadFormat[]).map(fmt => (
-                                                                    <button key={fmt} onClick={() => handleExportGeneratedResume(fmt)} className="block w-full text-left px-4 py-2 hover:bg-cream uppercase text-xs font-medium text-stone">
-                                                                        {fmt === 'pdf' ? 'PDF (print)' : fmt === 'doc' ? 'Word (.doc)' : 'Markdown (.md)'}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
+                            {includedLineIds && (
+                                <div className="flex justify-between items-center mb-6 pb-6 border-b border-sand crm-enter">
+                                    <span className={`text-xs font-medium ${(generatedMarkdown?.length || 0) > resumeCharBudget ? 'text-danger' : 'text-taupe'}`}>
+                                        {generatedMarkdown?.length || 0} / {resumeCharBudget} characters
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="primary" onClick={handleSaveGeneratedResume}>Save Resume</Button>
+                                        <div className="relative">
+                                            <Button variant="secondary" className="!px-3 !py-1.5 !text-xs" onClick={() => setShowDownloadMenu(v => !v)}>
+                                                <Download className="w-3 h-3 mr-1.5" />Download Resume
+                                            </Button>
+                                            {showDownloadMenu && (
+                                                <div className="absolute right-0 bottom-full mb-1 bg-white border border-sand rounded-lg shadow-lg z-10 text-sm overflow-hidden">
+                                                    {(['md', 'pdf', 'doc'] as DownloadFormat[]).map(fmt => (
+                                                        <button key={fmt} onClick={() => handleExportGeneratedResume(fmt)} className="block w-full text-left px-4 py-2 hover:bg-cream uppercase text-xs font-medium text-stone">
+                                                            {fmt === 'pdf' ? 'PDF (print)' : fmt === 'doc' ? 'Word (.doc)' : 'Markdown (.md)'}
+                                                        </button>
+                                                    ))}
                                                 </div>
-                                            </div>
-
-                                            <div className="flex gap-4">
-                                                {/* Left: experience bullet checkboxes */}
-                                                <div className="w-1/2 border border-sand rounded-lg p-3 overflow-y-auto h-[800px] crm-scrollbar">
-                                                    {resumeSections
-                                                        .filter(s => s.id === 'experience')
-                                                        .map(section => (
-                                                            <div key={section.id}>
-                                                                <p className="text-xs font-semibold text-taupe uppercase tracking-wide mb-2">{section.label}</p>
-                                                                {resumeEntries
-                                                                    .filter(e => e.sectionId === section.id)
-                                                                    .sort((a, b) => a.order - b.order)
-                                                                    .map(entry => {
-                                                                        const lines = getCandidateLines(resumeLines, job.id)
-                                                                            .filter(l => l.sectionId === section.id && l.entryId === entry.id)
-                                                                            .sort((a, b) => a.order - b.order);
-                                                                        if (!lines.length) return null;
-                                                                        return (
-                                                                            <div key={entry.id} className="mb-3">
-                                                                                <p className="text-xs font-medium text-ink mb-1">{[entry.heading, entry.subheading].filter(Boolean).join(', ')}</p>
-                                                                                {lines.map(l => (
-                                                                                    <label key={l.id} className="flex items-start space-x-2 text-xs py-0.5 cursor-pointer">
-                                                                                        <input type="checkbox" className="mt-0.5" checked={includedLineIds.has(l.id)} onChange={() => toggleGeneratedLine(l.id)} />
-                                                                                        <span className="text-ink">{l.content}{l.jobId && <span className="text-forest"> (added for this job)</span>}</span>
-                                                                                    </label>
-                                                                                ))}
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                            </div>
-                                                        ))}
-                                                </div>
-
-                                                {/* Right: full resume preview */}
-                                                <div className="w-1/2 border border-sand rounded-lg p-3 overflow-y-auto h-[800px] crm-scrollbar bg-cream">
-                                                    {renderMarkdown(generatedMarkdown)}
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Summary */}
+                            <div className="mb-6">
+                                <div className="flex justify-between items-center mb-1">
+                                    <h3 className="text-sm font-semibold text-ink">Summary</h3>
+                                    <span className="text-xs text-taupe italic">Saved per job — won't affect your base resume</span>
+                                </div>
+                                <Textarea
+                                    rows={4}
+                                    value={tailoredSummary}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTailoredSummary(e.target.value)}
+                                    onBlur={() => updateJob(job.id, { customFields: { ...job.customFields, _tailoredSummary: tailoredSummary } })}
+                                    placeholder="Tailored summary for this role..."
+                                />
+                                <p className={`text-xs mt-1 text-right ${tailoredSummary.length > 500 ? 'text-red-500 font-semibold' : 'text-taupe'}`}>
+                                    {tailoredSummary.length}/500
+                                </p>
+                            </div>
+
+                            {/* Professional Experience */}
+                            <div>
+                                <h3 className="text-sm font-semibold text-ink mb-3">Professional Experience</h3>
+                                <div className="space-y-3">
+                                    {resumeEntries
+                                        .filter(e => e.sectionId === 'experience')
+                                        .sort((a, b) => a.order - b.order)
+                                        .map(entry => {
+                                            const candidateLines = getCandidateLines(resumeLines, job.id)
+                                                .filter(l => l.sectionId === 'experience' && l.entryId === entry.id)
+                                                .sort((a, b) => a.order - b.order);
+                                            const bulletDraft = newBulletDrafts[entry.id] || '';
+                                            const dateRange = [entry.startDate, entry.endDate].filter(Boolean).join(' – ');
+                                            return (
+                                                <Card key={entry.id} className="p-4">
+                                                    <div className="mb-2">
+                                                        <span className="text-sm font-medium text-ink">
+                                                            {[entry.heading, entry.subheading].filter(Boolean).join(', ')}
+                                                        </span>
+                                                        {dateRange && <span className="text-xs text-taupe ml-2">{dateRange}</span>}
+                                                    </div>
+                                                    <ul className="space-y-1.5 mb-3">
+                                                        {candidateLines.map(l => (
+                                                            <li key={l.id} className="flex items-start gap-2 text-xs">
+                                                                {includedLineIds !== null && (
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="mt-0.5 flex-shrink-0"
+                                                                        checked={includedLineIds.has(l.id)}
+                                                                        onChange={() => toggleGeneratedLine(l.id)}
+                                                                    />
+                                                                )}
+                                                                <span className={`flex-1 leading-relaxed ${includedLineIds !== null && !includedLineIds.has(l.id) ? 'text-taupe line-through' : 'text-ink'}`}>
+                                                                    {l.content}
+                                                                </span>
+                                                                {l.jobId && (
+                                                                    <>
+                                                                        <span className="text-forest text-xs flex-shrink-0">(added)</span>
+                                                                        <button onClick={() => deleteResumeLine(l.id)} className="text-taupe hover:text-danger flex-shrink-0">
+                                                                            <Trash2 className="w-3 h-3" />
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </li>
+                                                        ))}
+                                                        {(stagedBullets[entry.id] || []).map((content, i) => (
+                                                            <li key={`staged-${i}`} className="flex items-start gap-2 text-xs">
+                                                                {includedLineIds !== null && (
+                                                                    <input type="checkbox" className="mt-0.5 flex-shrink-0" checked disabled />
+                                                                )}
+                                                                <span className="flex-1 leading-relaxed text-ink italic">{content}</span>
+                                                                <span className="text-wood text-xs flex-shrink-0">unsaved</span>
+                                                                <button
+                                                                    onClick={() => setStagedBullets(prev => ({ ...prev, [entry.id]: prev[entry.id].filter((_, idx) => idx !== i) }))}
+                                                                    className="text-taupe hover:text-danger flex-shrink-0"
+                                                                >
+                                                                    <Trash2 className="w-3 h-3" />
+                                                                </button>
+                                                            </li>
+                                                        ))}
+                                                        {candidateLines.length === 0 && (stagedBullets[entry.id] || []).length === 0 && (
+                                                            <li className="text-xs text-taupe italic">No bullets yet.</li>
+                                                        )}
+                                                    </ul>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            className={`flex-1 px-2 py-1.5 border rounded text-xs bg-paper text-ink crm-focus ${bulletDraft.length > 110 ? 'border-red-400' : 'border-sand'}`}
+                                                            placeholder="Add a bullet for this job..."
+                                                            value={bulletDraft}
+                                                            onChange={e => setNewBulletDrafts(prev => ({ ...prev, [entry.id]: e.target.value }))}
+                                                            onKeyDown={e => e.key === 'Enter' && handleAddJobBullet(entry)}
+                                                        />
+                                                        <Button variant="ghost" onClick={() => handleAddJobBullet(entry)} disabled={!bulletDraft.trim() || bulletDraft.length > 110}>
+                                                            <Plus className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
+                                                    {bulletDraft.length > 110 && (
+                                                        <p className="text-xs text-red-500 mt-1">{bulletDraft.length}/110 — shorten before adding</p>
+                                                    )}
+                                                </Card>
+                                            );
+                                        })}
+                                    {resumeEntries.filter(e => e.sectionId === 'experience').length === 0 && (
+                                        <p className="text-xs text-taupe">No experience entries in your base resume yet.</p>
                                     )}
                                 </div>
-                            </Card>
-                        </div>
+                            </div>
+                        </Card>
                     </div>
                 )}
 

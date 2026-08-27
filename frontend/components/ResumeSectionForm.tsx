@@ -22,6 +22,7 @@ const CharCount: React.FC<{ count: number; max: number }> = ({ count, max }) => 
 
 export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobId }) => {
     const {
+        jobs,
         resumeSections, resumeTextBlocks, resumeEntries, resumeLines,
         updateResumeText, addResumeEntry, updateResumeEntry, deleteResumeEntry,
         addResumeLine, updateResumeLine, deleteResumeLine,
@@ -245,6 +246,36 @@ export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobI
                                                             <p className="text-xs text-red-500 mt-1">Max {BULLET_MAX} characters — shorten before adding</p>
                                                         )}
                                                     </div>
+                                                    {(() => {
+                                                        const jobLines = resumeLines.filter(l => l.sectionId === section.id && l.entryId === entry.id && l.jobId);
+                                                        if (!jobLines.length) return null;
+                                                        const byJob = jobLines.reduce<Record<string, typeof jobLines>>((acc, l) => {
+                                                            const jId = l.jobId!;
+                                                            acc[jId] = [...(acc[jId] || []), l];
+                                                            return acc;
+                                                        }, {});
+                                                        return (
+                                                            <div className="mt-3 pt-3 border-t border-sand">
+                                                                <p className="text-xs font-medium text-taupe uppercase tracking-wide mb-2">Tailored bullets</p>
+                                                                {Object.entries(byJob).map(([jId, lines]) => {
+                                                                    const j = jobs.find(j => j.id === jId);
+                                                                    return (
+                                                                        <div key={jId} className="mb-2">
+                                                                            <p className="text-xs text-taupe mb-1">{j ? `${j.title} @ ${j.company}` : 'Unknown job'}</p>
+                                                                            <ul className="space-y-1">
+                                                                                {lines.map(l => (
+                                                                                    <li key={l.id} className="flex items-center gap-2 text-xs text-ink bg-cream rounded px-2 py-1">
+                                                                                        <span className="flex-1">{l.content}</span>
+                                                                                        <button onClick={() => deleteResumeLine(l.id)} className="text-taupe hover:text-danger flex-shrink-0"><Trash2 className="w-3 h-3" /></button>
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </>
                                             )}
                                         </Card>

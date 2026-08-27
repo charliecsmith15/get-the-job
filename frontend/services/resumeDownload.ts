@@ -92,9 +92,10 @@ body {
     font-size: 10.5pt;
     margin: 0;
     padding: 0;
+    tab-stops: right 7.1in;
+    mso-tab-stops: right 7.1in;
 }
 .entry-date {
-    float: right;
     font-weight: normal;
     font-size: 10.5pt;
     white-space: nowrap;
@@ -176,8 +177,8 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
                 entryBlocks.push(
                     `<div class="exp-entry">` +
                     `<p class="entry-heading">` +
-                    (dateRange ? `<span class="entry-date">${escapeHTML(dateRange)}</span>` : '') +
                     escapeHTML(heading) +
+                    (dateRange ? `&#9;<span class="entry-date">${escapeHTML(dateRange)}</span>` : '') +
                     `</p>` +
                     (entry.location ? `<div class="entry-location">${escapeHTML(entry.location)}</div>` : '') +
                     `<ul>${bulletItems}</ul>` +
@@ -250,7 +251,7 @@ function markdownToHTML(md: string): string {
         } else if (/ \|\|\| /.test(line)) {
             flushList();
             const [left, right] = line.split(' ||| ');
-            out.push(`<p class="entry-heading"><span class="entry-date">${escapeHTMLInline(right.trim())}</span>${inlineFormat(left)}</p>`);
+            out.push(`<p class="entry-heading">${inlineFormat(left)}&#9;<span class="entry-date">${escapeHTMLInline(right.trim())}</span></p>`);
         } else if (/^:: /.test(line)) {
             flushList();
             out.push(`<div class="entry-location">${inlineFormat(line.slice(3))}</div>`);

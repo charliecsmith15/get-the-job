@@ -52,7 +52,5 @@ document.getElementById('save').addEventListener('click', async () => {
 
 load();
 
-chrome.runtime.sendMessage({ type: 'GET_REDIRECT_URL' }, (response) => {
-  const el = document.getElementById('redirectUrl');
-  if (el && response?.url) el.textContent = response.url;
-});
+const redirectEl = document.getElementById('redirectUrl');
+if (redirectEl) redirectEl.textContent = chrome.identity.getRedirectURL();

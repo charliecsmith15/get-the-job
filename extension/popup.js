@@ -70,9 +70,9 @@ async function init() {
     // Email check is a UX guard only — run it after the form is visible so it
     // never blocks load. Switch to denied if it comes back unauthorized.
     getSignedInEmail().then((email) => {
-      if (!email || !settings.allowedEmails.includes(email)) {
+      if (email && !settings.allowedEmails.includes(email)) {
         showState('denied');
-      } else {
+      } else if (email) {
         document.getElementById('signed-in-as').textContent = `Signed in as ${email}`;
       }
     }).catch(() => {});

@@ -29,7 +29,7 @@ interface AppState {
 }
 
 interface AppContextType extends AppState {
-    updateAccountProfile: (updates: Partial<AccountProfile>) => Promise<void>;
+    updateAccountProfile: (updates: Partial<AccountProfile>) => void;
     addJob: (job: Omit<Job, 'id' | 'dateAdded'>) => Promise<Job>;
     updateJob: (id: string, updates: Partial<Job>) => void;
     deleteJob: (id: string) => void;
@@ -421,6 +421,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (!dbConfig.enabled) { setResumeIsDirty(false); return; }
         setSyncStatus('syncing');
         try {
+            await apiClient.updateAccountProfile(accountProfile);
+
             for (const tb of resumeTextBlocks) {
                 await apiClient.updateResumeText(tb.sectionId, tb.content);
             }
@@ -506,16 +508,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
-    const updateAccountProfile = async (updates: Partial<AccountProfile>) => {
-        const merged = { ...accountProfile, ...updates };
-        setAccountProfile(merged);
-        if (dbConfig.enabled) {
-            try {
-                await apiClient.updateAccountProfile(merged);
-            } catch (e) {
-                console.error(e);
-            }
-        }
+    const updateAccountProfile = (updates: Partial<AccountProfile>) => {
+        setAccountProfile(prev => ({ ...prev, ...updates }));
+        setResumeIsDirty(true);
     };
 
     const updatePreferencesState = async (prefs: Preferences) => {

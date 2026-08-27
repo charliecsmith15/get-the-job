@@ -60,7 +60,7 @@ body {
     margin-bottom: 4px;
 }
 .header-contact {
-    text-align: left;
+    text-align: center;
     font-size: 10pt;
     margin-bottom: 14px;
 }

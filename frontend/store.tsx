@@ -423,7 +423,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         try {
             try { await apiClient.updateAccountProfile(accountProfile); } catch (e) { console.error('[saveResume] profile save failed:', e); }
 
-            for (const tb of resumeTextBlocks) {
+            const activeSectionIds = new Set(resumeSections.map(s => s.id));
+            for (const tb of resumeTextBlocks.filter(tb => activeSectionIds.has(tb.sectionId))) {
                 await apiClient.updateResumeText(tb.sectionId, tb.content);
             }
             for (const entry of resumeEntries) {

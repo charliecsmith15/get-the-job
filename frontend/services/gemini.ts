@@ -107,7 +107,7 @@ Your job is to help create highly tailored resumes for specific job descriptions
 - Hiring managers reviewing for credibility, relevance, and seniority.
 Only suggest changes to the content of the resume — never to its format or structure. Be specific and prioritized.`;
 
-export const RESUME_ADVICE_USER_PROMPT = `Based solely on the resume content and this job description, provide specific, prioritized edits the candidate should make to the wording and content of their resume to better match this role. Do not suggest any changes to formatting or structure — only content. Do not suggest adding new sections. All recommendations must be changes to content within the sections already present in the resume. Be direct and cite specific lines or sections from the resume by name.`;
+export const RESUME_ADVICE_USER_PROMPT = `Based solely on the resume content and this job description, provide specific, prioritized edits the candidate should make to the wording and content of their resume to better match this role. Do not suggest any changes to formatting or structure — only content. Do not suggest adding new sections. All recommendations must be changes to content within the sections already present in the resume. Be direct and cite specific lines or sections from the resume by name. Do not reference or suggest changes to any other job search materials such as cover letters — resume edits only.`;
 
 export const tailorResumeSuggestion = async (jobDescription: string, resumeMarkdown: string) => {
     const prompt = `

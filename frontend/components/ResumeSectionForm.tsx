@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Input, Textarea } from './UI';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ResumeSectionFormProps {
     mode: 'baseline' | 'job';
@@ -29,6 +29,7 @@ export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobI
     } = useAppStore();
 
     const [newLineDrafts, setNewLineDrafts] = useState<Record<string, string>>({});
+    const [collapsedTailored, setCollapsedTailored] = useState<Set<string>>(new Set());
     const draftKey = (sectionId: string, entryId?: string) => entryId ? `${sectionId}:${entryId}` : sectionId;
 
     const handleAddLine = async (sectionId: string, entryId: string | undefined, forJob: boolean) => {
@@ -249,6 +250,12 @@ export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobI
                                                     {(() => {
                                                         const jobLines = resumeLines.filter(l => l.sectionId === section.id && l.entryId === entry.id && l.jobId);
                                                         if (!jobLines.length) return null;
+                                                        const isCollapsed = collapsedTailored.has(entry.id);
+                                                        const toggle = () => setCollapsedTailored(prev => {
+                                                            const next = new Set(prev);
+                                                            next.has(entry.id) ? next.delete(entry.id) : next.add(entry.id);
+                                                            return next;
+                                                        });
                                                         const byJob = jobLines.reduce<Record<string, typeof jobLines>>((acc, l) => {
                                                             const jId = l.jobId!;
                                                             acc[jId] = [...(acc[jId] || []), l];
@@ -256,8 +263,16 @@ export const ResumeSectionForm: React.FC<ResumeSectionFormProps> = ({ mode, jobI
                                                         }, {});
                                                         return (
                                                             <div className="mt-3 pt-3 border-t border-sand">
-                                                                <p className="text-xs font-medium text-taupe uppercase tracking-wide mb-2">Tailored bullets</p>
-                                                                {Object.entries(byJob).map(([jId, lines]) => {
+                                                                <button
+                                                                    className="flex items-center gap-1 w-full text-left mb-2"
+                                                                    onClick={toggle}
+                                                                >
+                                                                    <span className="text-xs font-medium text-taupe uppercase tracking-wide">Tailored bullets</span>
+                                                                    {isCollapsed
+                                                                        ? <ChevronDown className="w-3 h-3 text-taupe ml-auto" />
+                                                                        : <ChevronUp className="w-3 h-3 text-taupe ml-auto" />}
+                                                                </button>
+                                                                {!isCollapsed && Object.entries(byJob).map(([jId, lines]) => {
                                                                     const j = jobs.find(j => j.id === jId);
                                                                     return (
                                                                         <div key={jId} className="mb-2">

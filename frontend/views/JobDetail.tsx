@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Badge, Textarea, Input, renderBold, renderMarkdown } from '../components/UI';
 import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X, ScrollText, Mic, ChevronDown, ChevronUp } from 'lucide-react';
-import { analyzeJobMatch, generateInterviewQuestions, tailorResumeSuggestion, selectResumeLines, getRelevantTechnicalQuestions } from '../services/gemini';
+import { analyzeJobMatch, generateInterviewQuestions, selectResumeLines, getRelevantTechnicalQuestions } from '../services/gemini';
 import { renderResumeMarkdown, trimToBudget, getCandidateLines } from '../services/resumeRenderer';
 import { downloadResume, DownloadFormat } from '../services/resumeDownload';
 import { ResumeSectionForm } from '../components/ResumeSectionForm';
@@ -26,14 +26,12 @@ export const JobDetail: React.FC = () => {
     // AI States
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
-    const [isTailoring, setIsTailoring] = useState(false);
     const [isGeneratingResume, setIsGeneratingResume] = useState(false);
     
     const [aiQuestions, setAiQuestions] = useState<string | null>(null);
     const [savedAiQuestions, setSavedAiQuestions] = useState<Set<number>>(new Set());
     const [relevantTechnicalIds, setRelevantTechnicalIds] = useState<string[] | null>(null);
     const [isCheckingRelevance, setIsCheckingRelevance] = useState(false);
-    const [aiTailorAdvice, setAiTailorAdvice] = useState<string | null>(null);
     const [includedLineIds, setIncludedLineIds] = useState<Set<string> | null>(null);
 
     const job = jobs.find(j => j.id === selectedJobId);
@@ -53,7 +51,6 @@ export const JobDetail: React.FC = () => {
     useEffect(() => {
         const existing = job ? resumeGenerations.find(g => g.jobId === job.id) : null;
         setIncludedLineIds(existing ? new Set(existing.selectedLineIds) : null);
-        setAiTailorAdvice(null);
     }, [job?.id]);
 
     useEffect(() => {
@@ -129,19 +126,6 @@ export const JobDetail: React.FC = () => {
         }
     };
 
-    const handleTailorAdvice = async () => {
-        if (!job.description) return alert("Please add a job description first.");
-
-        setIsTailoring(true);
-        try {
-            const result = await tailorResumeSuggestion(job.description, resumeMarkdown);
-            setAiTailorAdvice(result);
-        } catch (error) {
-            alert("Failed to generate tailoring advice.");
-        } finally {
-            setIsTailoring(false);
-        }
-    };
 
     // The AI only selects which candidate lines to include — it never
     // rewrites the resume. We then deterministically render the result and
@@ -159,8 +143,7 @@ export const JobDetail: React.FC = () => {
             );
             const { includedLineIds: trimmed } = trimToBudget(resumeSections, resumeTextBlocks, resumeEntries, resumeLines, selections, resumeCharBudget, accountProfile);
             setIncludedLineIds(trimmed);
-            setAiTailorAdvice(null);
-        } catch (error) {
+            } catch (error) {
             alert("Failed to generate tailored resume.");
         } finally {
             setIsGeneratingResume(false);
@@ -564,23 +547,14 @@ export const JobDetail: React.FC = () => {
                                     <h2 className="text-lg font-semibold text-ink">Tailor Resume</h2>
                                 </div>
                                 <div className="space-y-4">
-                                    <div className="flex space-x-2">
-                                        <Button className="flex-1" variant="secondary" onClick={handleTailorAdvice} disabled={isTailoring || isGeneratingResume || !job.description}>
-                                            {isTailoring ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Get Advice'}
-                                        </Button>
-                                        <Button className="flex-1" variant="primary" onClick={handleGenerateResume} disabled={isTailoring || isGeneratingResume || !job.description}>
-                                            {isGeneratingResume ? <Loader2 className="w-4 h-4 animate-spin"/> : 'Generate Resume'}
+                                    <div className="flex justify-end">
+                                        <Button variant="primary" onClick={handleGenerateResume} disabled={isGeneratingResume || !job.description}>
+                                            {isGeneratingResume ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Generate Resume'}
                                         </Button>
                                     </div>
 
-                                    {aiTailorAdvice && (
-                                        <div className="mt-4 p-4 bg-cream rounded-lg border border-sand max-h-64 overflow-y-auto crm-scrollbar">
-                                            {renderMarkdown(aiTailorAdvice)}
-                                        </div>
-                                    )}
-
                                     {includedLineIds && (
-                                        <div className="mt-4 space-y-3 crm-enter">
+                                        <div className="crm-enter space-y-3">
                                             <div className="flex justify-between items-center">
                                                 <span className={`text-xs font-medium ${(generatedMarkdown?.length || 0) > resumeCharBudget ? 'text-danger' : 'text-taupe'}`}>
                                                     {generatedMarkdown?.length || 0} / {resumeCharBudget} characters
@@ -602,38 +576,42 @@ export const JobDetail: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="max-h-64 overflow-y-auto crm-scrollbar border border-sand rounded-lg p-3 space-y-3">
-                                                {resumeSections.filter(s => s.type !== 'text').sort((a, b) => a.order - b.order).map(section => {
-                                                    const entryGroups = section.type === 'entries'
-                                                        ? resumeEntries.filter(e => e.sectionId === section.id).sort((a, b) => a.order - b.order)
-                                                        : [null];
-                                                    return (
-                                                        <div key={section.id}>
-                                                            <p className="text-xs font-semibold text-taupe uppercase tracking-wide mb-1">{section.label}</p>
-                                                            {entryGroups.map(entry => {
-                                                                const lines = getCandidateLines(resumeLines, job.id)
-                                                                    .filter(l => l.sectionId === section.id && (entry ? l.entryId === entry.id : !l.entryId))
-                                                                    .sort((a, b) => a.order - b.order);
-                                                                if (!lines.length) return null;
-                                                                return (
-                                                                    <div key={entry?.id || 'list'} className="mb-2">
-                                                                        {entry && <p className="text-xs font-medium text-ink">{[entry.heading, entry.subheading].filter(Boolean).join(', ')}</p>}
-                                                                        {lines.map(l => (
-                                                                            <label key={l.id} className="flex items-start space-x-2 text-xs py-0.5 cursor-pointer">
-                                                                                <input type="checkbox" className="mt-0.5" checked={includedLineIds.has(l.id)} onChange={() => toggleGeneratedLine(l.id)} />
-                                                                                <span className="text-ink">{l.content}{l.jobId && <span className="text-forest"> (added for this job)</span>}</span>
-                                                                            </label>
-                                                                        ))}
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                            <div className="flex gap-4">
+                                                {/* Left: experience bullet checkboxes */}
+                                                <div className="w-1/2 border border-sand rounded-lg p-3 overflow-y-auto h-[520px] crm-scrollbar">
+                                                    {resumeSections
+                                                        .filter(s => s.id === 'experience')
+                                                        .map(section => (
+                                                            <div key={section.id}>
+                                                                <p className="text-xs font-semibold text-taupe uppercase tracking-wide mb-2">{section.label}</p>
+                                                                {resumeEntries
+                                                                    .filter(e => e.sectionId === section.id)
+                                                                    .sort((a, b) => a.order - b.order)
+                                                                    .map(entry => {
+                                                                        const lines = getCandidateLines(resumeLines, job.id)
+                                                                            .filter(l => l.sectionId === section.id && l.entryId === entry.id)
+                                                                            .sort((a, b) => a.order - b.order);
+                                                                        if (!lines.length) return null;
+                                                                        return (
+                                                                            <div key={entry.id} className="mb-3">
+                                                                                <p className="text-xs font-medium text-ink mb-1">{[entry.heading, entry.subheading].filter(Boolean).join(', ')}</p>
+                                                                                {lines.map(l => (
+                                                                                    <label key={l.id} className="flex items-start space-x-2 text-xs py-0.5 cursor-pointer">
+                                                                                        <input type="checkbox" className="mt-0.5" checked={includedLineIds.has(l.id)} onChange={() => toggleGeneratedLine(l.id)} />
+                                                                                        <span className="text-ink">{l.content}{l.jobId && <span className="text-forest"> (added for this job)</span>}</span>
+                                                                                    </label>
+                                                                                ))}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                            </div>
+                                                        ))}
+                                                </div>
 
-                                            <div className="p-4 bg-cream rounded-lg border border-sand max-h-64 overflow-y-auto crm-scrollbar">
-                                                {renderMarkdown(generatedMarkdown)}
+                                                {/* Right: full resume preview */}
+                                                <div className="w-1/2 border border-sand rounded-lg p-3 overflow-y-auto h-[520px] crm-scrollbar bg-cream">
+                                                    {renderMarkdown(generatedMarkdown)}
+                                                </div>
                                             </div>
                                         </div>
                                     )}

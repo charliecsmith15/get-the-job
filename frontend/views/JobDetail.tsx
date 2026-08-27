@@ -11,7 +11,7 @@ import { Job } from '../types';
 export const JobDetail: React.FC = () => {
     const {
         jobs, notes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, setJobAnalysis, jobSources, addInterviewQuestion,
-        resumeSections, resumeCharBudget, resumeTextBlocks, resumeEntries, resumeLines, resumeMarkdown, resumeGenerations, saveResumeGeneration,
+        accountProfile, resumeSections, resumeCharBudget, resumeTextBlocks, resumeEntries, resumeLines, resumeMarkdown, resumeGenerations, saveResumeGeneration,
     } = useAppStore();
     const [activeTab, setActiveTab] = useState<'details' | 'ai' | 'resume' | 'interview' | 'notes'>('details');
     
@@ -157,7 +157,7 @@ export const JobDetail: React.FC = () => {
                 job.description, resumeSections, entriesForPrompt, candidateLines, resumeCharBudget,
                 resumeMarkdown, preferences, contextResources, journalEntries
             );
-            const { includedLineIds: trimmed } = trimToBudget(resumeSections, resumeTextBlocks, resumeEntries, resumeLines, selections, resumeCharBudget);
+            const { includedLineIds: trimmed } = trimToBudget(resumeSections, resumeTextBlocks, resumeEntries, resumeLines, selections, resumeCharBudget, accountProfile);
             setIncludedLineIds(trimmed);
             setAiTailorAdvice(null);
         } catch (error) {
@@ -176,7 +176,7 @@ export const JobDetail: React.FC = () => {
     };
 
     const generatedMarkdown = includedLineIds
-        ? renderResumeMarkdown(resumeSections, resumeTextBlocks, resumeEntries, resumeLines, includedLineIds)
+        ? renderResumeMarkdown(resumeSections, resumeTextBlocks, resumeEntries, resumeLines, includedLineIds, accountProfile)
         : null;
 
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
@@ -188,7 +188,7 @@ export const JobDetail: React.FC = () => {
             generatedMarkdown,
             `${job.company}_tailored_resume`,
             format,
-            { sections: resumeSections, textBlocks: resumeTextBlocks, entries: resumeEntries, lines: resumeLines, includedLineIds }
+            { sections: resumeSections, textBlocks: resumeTextBlocks, entries: resumeEntries, lines: resumeLines, includedLineIds, accountProfile }
         );
         setShowDownloadMenu(false);
     };

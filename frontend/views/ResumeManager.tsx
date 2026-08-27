@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store';
-import { Card, Button, Textarea } from '../components/UI';
+import { Card, Button, Input, Textarea } from '../components/UI';
 import { FileText, Upload, Loader2, Save } from 'lucide-react';
 import { ResumeSectionForm } from '../components/ResumeSectionForm';
 import { parseResumeIntoSections } from '../services/gemini';
 
 export const ResumeManager: React.FC = () => {
     const {
+        accountProfile, updateAccountProfile,
         resumeSections, resumeTextBlocks, resumeEntries, resumeLines, resumeRawImport,
         saveResumeRawImport, updateResumeText, addResumeEntry, addResumeLine,
         resumeIsDirty, saveResume,
@@ -87,6 +88,20 @@ export const ResumeManager: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            <Card className="p-6 mb-6">
+                <h2 className="text-sm font-semibold text-ink mb-3">Contact Info</h2>
+                <p className="text-xs text-taupe mb-4">Automatically included at the top of every resume download.</p>
+                <div className="grid grid-cols-2 gap-3">
+                    <Input placeholder="First name" value={accountProfile.firstName} onChange={e => updateAccountProfile({ firstName: e.target.value })} />
+                    <Input placeholder="Last name" value={accountProfile.lastName} onChange={e => updateAccountProfile({ lastName: e.target.value })} />
+                    <Input placeholder="Phone number" value={accountProfile.phoneNumber} onChange={e => updateAccountProfile({ phoneNumber: e.target.value })} />
+                    <Input placeholder="Display email" value={accountProfile.displayEmail} onChange={e => updateAccountProfile({ displayEmail: e.target.value })} />
+                    <div className="col-span-2">
+                        <Input placeholder="LinkedIn URL" value={accountProfile.linkedin} onChange={e => updateAccountProfile({ linkedin: e.target.value })} />
+                    </div>
+                </div>
+            </Card>
 
             {!hasContent && !showImport ? null : showImport ? (
                 <Card className="p-6 mb-8 crm-enter">

@@ -10,7 +10,12 @@ CREATE TABLE IF NOT EXISTS accounts (
     email VARCHAR(255) UNIQUE NOT NULL,
     "displayName" VARCHAR(255),
     "isDemo" BOOLEAN DEFAULT FALSE,
-    "createdAt" TIMESTAMPTZ DEFAULT NOW()
+    "createdAt" TIMESTAMPTZ DEFAULT NOW(),
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    display_email VARCHAR(255),
+    linkedin VARCHAR(500),
+    phone_number VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS jobs (
@@ -159,6 +164,13 @@ CREATE INDEX IF NOT EXISTS job_analyses_account_idx ON job_analyses ("accountId"
 -- CREATE TABLE IF NOT EXISTS job_analyses (...) — run the block above on existing instances.
 --
 -- ALTER TABLE resume_entries ADD COLUMN IF NOT EXISTS location VARCHAR(255);
+--
+-- Account profile columns (existing databases only):
+-- ALTER TABLE accounts ADD COLUMN IF NOT EXISTS first_name VARCHAR(255);
+-- ALTER TABLE accounts ADD COLUMN IF NOT EXISTS last_name VARCHAR(255);
+-- ALTER TABLE accounts ADD COLUMN IF NOT EXISTS display_email VARCHAR(255);
+-- ALTER TABLE accounts ADD COLUMN IF NOT EXISTS linkedin VARCHAR(500);
+-- ALTER TABLE accounts ADD COLUMN IF NOT EXISTS phone_number VARCHAR(50);
 --
 -- Accounts migration (existing databases only): see backend/migrate_to_accounts.sql.
 -- Do not hand-run the "accountId" columns above against a database that

@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useRef, ReactNode, useEffect, useMemo } from 'react';
-import { Job, JobAnalysis, Note, Preferences, ContextResource, ViewState, DbConfig, SyncStatus, JournalEntry, InterviewQuestion, JobSource, ResumeSectionConfig, ResumeTextBlock, ResumeEntry, ResumeLine, ResumeGeneration } from './types';
+import { Job, JobAnalysis, Note, Preferences, AccountProfile, ContextResource, ViewState, DbConfig, SyncStatus, JournalEntry, InterviewQuestion, JobSource, ResumeSectionConfig, ResumeTextBlock, ResumeEntry, ResumeLine, ResumeGeneration } from './types';
 import { createApiClient } from './services/api';
 import { renderResumeMarkdown } from './services/resumeRenderer';
 
 interface AppState {
+    accountProfile: AccountProfile;
     jobs: Job[];
     notes: Note[];
     resumeSections: ResumeSectionConfig[];
@@ -28,6 +29,7 @@ interface AppState {
 }
 
 interface AppContextType extends AppState {
+    updateAccountProfile: (updates: Partial<AccountProfile>) => Promise<void>;
     addJob: (job: Omit<Job, 'id' | 'dateAdded'>) => Promise<Job>;
     updateJob: (id: string, updates: Partial<Job>) => void;
     deleteJob: (id: string) => void;
@@ -103,12 +105,13 @@ const mockNotes: Note[] = [
 // Whenever the DB is reachable, GET /api/resume-config is authoritative and
 // overwrites this on load, per the "sections change on the backend" design.
 const DEFAULT_RESUME_SECTIONS: ResumeSectionConfig[] = [
-    { id: 'header', label: 'Contact Info', type: 'text', order: 0 },
-    { id: 'summary', label: 'Summary', type: 'text', order: 1 },
-    { id: 'experience', label: 'Experience', type: 'entries', order: 2 },
-    { id: 'education', label: 'Education', type: 'entries', order: 3 },
-    { id: 'skills', label: 'Skills', type: 'list', order: 4 },
+    { id: 'summary', label: 'Summary', type: 'text', order: 0 },
+    { id: 'experience', label: 'Professional Experience', type: 'entries', order: 1 },
+    { id: 'education', label: 'Education', type: 'entries', order: 2 },
+    { id: 'skills', label: 'Additional Information', type: 'list', order: 3 },
 ];
+
+const EMPTY_PROFILE: AccountProfile = { firstName: '', lastName: '', displayEmail: '', linkedin: '', phoneNumber: '' };
 const DEFAULT_RESUME_CHAR_BUDGET = 4000;
 
 const mockResumeTextBlocks: ResumeTextBlock[] = [
@@ -128,6 +131,7 @@ const mockContextResources: ContextResource[] = [
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [accountProfile, setAccountProfile] = useState<AccountProfile>(EMPTY_PROFILE);
     const [jobs, setJobs] = useState<Job[]>(mockJobs);
     const [notes, setNotes] = useState<Note[]>(mockNotes);
     const [resumeSections, setResumeSections] = useState<ResumeSectionConfig[]>(DEFAULT_RESUME_SECTIONS);
@@ -184,8 +188,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // everywhere outside of a specific job's tailoring flow: foundational AI
     // context, interview questions, the chatbot, "Get Advice", and export.
     const resumeMarkdown = useMemo(
-        () => renderResumeMarkdown(resumeSections, resumeTextBlocks, resumeEntries, resumeLines.filter(l => !l.jobId)),
-        [resumeSections, resumeTextBlocks, resumeEntries, resumeLines]
+        () => renderResumeMarkdown(resumeSections, resumeTextBlocks, resumeEntries, resumeLines.filter(l => !l.jobId), null, accountProfile),
+        [resumeSections, resumeTextBlocks, resumeEntries, resumeLines, accountProfile]
     );
 
     // Fetch initial data if DB is enabled
@@ -204,7 +208,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 apiClient.getResume().catch(() => null),
                 apiClient.getResumeGenerations().catch(() => []),
                 apiClient.getResumeRawImport().catch(() => null),
-            ]).then(([j, n, c, p, je, iq, ja, rc, r, rg, ri]) => {
+                apiClient.getMe().catch(() => null),
+            ]).then(([j, n, c, p, je, iq, ja, rc, r, rg, ri, me]) => {
                 if (j.length) setJobs(j);
                 if (n.length) setNotes(n);
                 if (c.length) setContextResources(c);
@@ -222,6 +227,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 }
                 if (rg.length) setResumeGenerations(rg);
                 if (ri) setResumeRawImport(ri.content);
+                if (me) {
+                    setAccountProfile({
+                        firstName: me.firstName || '',
+                        lastName: me.lastName || '',
+                        displayEmail: me.displayEmail || '',
+                        linkedin: me.linkedin || '',
+                        phoneNumber: me.phoneNumber || '',
+                    });
+                }
                 setSyncStatus('idle');
             }).catch(err => {
                 console.error("Failed to fetch from SQL backend:", err);
@@ -492,6 +506,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
+    const updateAccountProfile = async (updates: Partial<AccountProfile>) => {
+        const merged = { ...accountProfile, ...updates };
+        setAccountProfile(merged);
+        if (dbConfig.enabled) {
+            try {
+                await apiClient.updateAccountProfile(merged);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    };
+
     const updatePreferencesState = async (prefs: Preferences) => {
         setPreferences(prefs);
 
@@ -646,10 +672,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return (
         <AppContext.Provider value={{
+            accountProfile,
             jobs, notes,
             resumeSections, resumeCharBudget, resumeTextBlocks, resumeEntries, resumeLines, resumeGenerations, resumeRawImport, resumeMarkdown, resumeIsDirty,
             preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, jobSources,
             currentView, selectedJobId, dbConfig, syncStatus,
+            updateAccountProfile,
             addJob, updateJob, deleteJob, addNote, deleteNote,
             updateResumeText, saveResumeRawImport,
             addResumeEntry, updateResumeEntry, deleteResumeEntry,

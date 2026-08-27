@@ -80,6 +80,14 @@ export interface ResumeGeneration {
     updatedAt: string;
 }
 
+export interface AccountProfile {
+    firstName: string;
+    lastName: string;
+    displayEmail: string;
+    linkedin: string;
+    phoneNumber: string;
+}
+
 export interface Preferences {
     petalsExercise: string;
     linkedInProfile?: string;

@@ -1,4 +1,4 @@
-import { Job, JobAnalysis, Note, Preferences, ContextResource, JournalEntry, InterviewQuestion, ResumeSectionConfig, ResumeTextBlock, ResumeEntry, ResumeLine, ResumeGeneration } from '../types';
+import { Job, JobAnalysis, Note, Preferences, AccountProfile, ContextResource, JournalEntry, InterviewQuestion, ResumeSectionConfig, ResumeTextBlock, ResumeEntry, ResumeLine, ResumeGeneration } from '../types';
 
 /**
  * API Client for communicating with the SQL Backend.
@@ -97,6 +97,12 @@ export const createApiClient = (baseUrl: string) => {
     };
 
     return {
+        // Account profile
+        getMe: (): Promise<{ email: string; isDemo: boolean } & Partial<AccountProfile>> =>
+            fetch(`${baseUrl}/me`, { headers: authHeaders() }).then(handleResponse),
+        updateAccountProfile: (profile: Partial<AccountProfile>): Promise<void> =>
+            fetch(`${baseUrl}/me/profile`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(profile) }).then(handleResponse),
+
         // Jobs
         getJobs: (): Promise<Job[]> => fetch(`${baseUrl}/jobs`, { headers }).then(handleResponse),
         createJob: (job: Job): Promise<void> => fetch(`${baseUrl}/jobs`, { method: 'POST', headers, body: JSON.stringify(job) }).then(handleResponse),

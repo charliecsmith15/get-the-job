@@ -1,4 +1,4 @@
-import { ResumeSectionConfig, ResumeTextBlock, ResumeEntry, ResumeLine } from '../types';
+import { AccountProfile, ResumeSectionConfig, ResumeTextBlock, ResumeEntry, ResumeLine } from '../types';
 
 export type DownloadFormat = 'md' | 'pdf' | 'doc';
 
@@ -8,6 +8,7 @@ export interface StructuredResumeData {
     entries: ResumeEntry[];
     lines: ResumeLine[];
     includedLineIds?: Set<string> | null;
+    accountProfile?: AccountProfile | null;
 }
 
 const byOrder = <T extends { order: number }>(items: T[]): T[] =>
@@ -103,30 +104,35 @@ body {
 `;
 
 function buildHTMLFromData(data: StructuredResumeData, title: string): string {
-    const { sections, textBlocks, entries, lines, includedLineIds } = data;
+    const { sections, textBlocks, entries, lines, includedLineIds, accountProfile } = data;
     const sortedSections = byOrder(sections);
     const bodyParts: string[] = [];
 
+    // Header auto-generated from account profile
+    if (accountProfile) {
+        const name = [accountProfile.firstName, accountProfile.lastName].filter(Boolean).join(' ');
+        const contactParts = [accountProfile.phoneNumber, accountProfile.displayEmail, accountProfile.linkedin].filter(Boolean);
+        if (name || contactParts.length) {
+            bodyParts.push(
+                (name ? `<div class="header-name">${escapeHTML(name)}</div>` : '') +
+                (contactParts.length ? `<div class="header-contact">${formatContactLine(contactParts.join(' • '))}</div>` : '')
+            );
+        }
+    }
+
     for (const section of sortedSections) {
+        if (section.id === 'header') continue; // legacy — now auto-generated above
+
         if (section.type === 'text') {
             const block = textBlocks.find(t => t.sectionId === section.id);
             const content = block?.content?.trim();
             if (!content) continue;
 
-            if (section.id === 'header') {
-                const [nameLine, ...rest] = content.split('\n').map(l => l.trim()).filter(Boolean);
-                const contactText = rest.join(' ');
-                bodyParts.push(
-                    `<div class="header-name">${escapeHTML(nameLine)}</div>` +
-                    (contactText ? `<div class="header-contact">${formatContactLine(contactText)}</div>` : '')
-                );
-            } else {
-                bodyParts.push(
-                    `<div class="section-header">${escapeHTML(section.label.toUpperCase())}</div>` +
-                    `<hr class="section-rule">` +
-                    `<p class="section-text">${escapeHTML(content)}</p>`
-                );
-            }
+            bodyParts.push(
+                `<div class="section-header">${escapeHTML(section.label.toUpperCase())}</div>` +
+                `<hr class="section-rule">` +
+                `<p class="section-text">${escapeHTML(content)}</p>`
+            );
             continue;
         }
 

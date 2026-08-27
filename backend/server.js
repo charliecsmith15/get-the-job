@@ -428,8 +428,34 @@ const dbError = (res, err) => {
   res.status(500).json({ error: err.message });
 };
 
-app.get('/api/me', (req, res) => {
-  res.json({ email: req.accountEmail, isDemo: req.isDemoAccount });
+app.get('/api/me', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT first_name, last_name, display_email, linkedin, phone_number FROM accounts WHERE id=$1',
+      [req.accountId]
+    );
+    const row = rows[0] || {};
+    res.json({
+      email: req.accountEmail,
+      isDemo: req.isDemoAccount,
+      firstName: row.first_name || null,
+      lastName: row.last_name || null,
+      displayEmail: row.display_email || null,
+      linkedin: row.linkedin || null,
+      phoneNumber: row.phone_number || null,
+    });
+  } catch (e) { dbError(res, e); }
+});
+
+app.put('/api/me/profile', async (req, res) => {
+  try {
+    const { firstName, lastName, displayEmail, linkedin, phoneNumber } = req.body;
+    await pool.query(
+      `UPDATE accounts SET first_name=$2, last_name=$3, display_email=$4, linkedin=$5, phone_number=$6 WHERE id=$1`,
+      [req.accountId, firstName || null, lastName || null, displayEmail || null, linkedin || null, phoneNumber || null]
+    );
+    res.json({ ok: true });
+  } catch (e) { dbError(res, e); }
 });
 
 // Jobs

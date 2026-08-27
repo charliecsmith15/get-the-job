@@ -1,4 +1,4 @@
-import { ResumeSectionConfig, ResumeTextBlock, ResumeEntry, ResumeLine } from '../types';
+import { AccountProfile, ResumeSectionConfig, ResumeTextBlock, ResumeEntry, ResumeLine } from '../types';
 
 // Pure, deterministic resume rendering. The AI never emits the final
 // document — it only selects which candidate lines to include (see
@@ -23,17 +23,27 @@ export function renderResumeMarkdown(
     textBlocks: ResumeTextBlock[],
     entries: ResumeEntry[],
     lines: ResumeLine[],
-    includedLineIds?: Set<string> | null
+    includedLineIds?: Set<string> | null,
+    accountProfile?: AccountProfile | null
 ): string {
     const sortedSections = byOrder(sections);
     const parts: string[] = [];
 
+    if (accountProfile) {
+        const name = [accountProfile.firstName, accountProfile.lastName].filter(Boolean).join(' ');
+        const contactParts = [accountProfile.phoneNumber, accountProfile.displayEmail, accountProfile.linkedin].filter(Boolean);
+        const headerLines = [name, contactParts.join(' • ')].filter(Boolean);
+        if (headerLines.length) parts.push(headerLines.join('\n'));
+    }
+
     for (const section of sortedSections) {
+        if (section.id === 'header') continue; // now auto-generated from accountProfile
+
         if (section.type === 'text') {
             const block = textBlocks.find(t => t.sectionId === section.id);
             const content = block?.content?.trim();
             if (!content) continue;
-            parts.push(section.id === 'header' ? content : `## ${section.label}\n\n${content}`);
+            parts.push(`## ${section.label}\n\n${content}`);
             continue;
         }
 
@@ -89,10 +99,11 @@ export function trimToBudget(
     entries: ResumeEntry[],
     lines: ResumeLine[],
     selections: LineSelection[],
-    totalCharBudget: number
+    totalCharBudget: number,
+    accountProfile?: AccountProfile | null
 ): { includedLineIds: Set<string>; markdown: string } {
     const included = new Set(selections.filter(s => s.include).map(s => s.lineId));
-    let markdown = renderResumeMarkdown(sections, textBlocks, entries, lines, included);
+    let markdown = renderResumeMarkdown(sections, textBlocks, entries, lines, included, accountProfile);
 
     if (markdown.length <= totalCharBudget) {
         return { includedLineIds: included, markdown };
@@ -105,7 +116,7 @@ export function trimToBudget(
     for (const s of trimOrder) {
         if (markdown.length <= totalCharBudget) break;
         included.delete(s.lineId);
-        markdown = renderResumeMarkdown(sections, textBlocks, entries, lines, included);
+        markdown = renderResumeMarkdown(sections, textBlocks, entries, lines, included, accountProfile);
     }
 
     return { includedLineIds: included, markdown };

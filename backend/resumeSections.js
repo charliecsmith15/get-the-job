@@ -19,11 +19,10 @@
 //   'list'    — a flat set of candidate lines with no parent entry
 //               (e.g. skills).
 export const RESUME_SECTIONS = [
-  { id: 'header', label: 'Contact Info', type: 'text', order: 0 },
-  { id: 'summary', label: 'Summary', type: 'text', order: 1 },
-  { id: 'experience', label: 'Professional Experience', type: 'entries', order: 2 },
-  { id: 'education', label: 'Education', type: 'entries', order: 3 },
-  { id: 'skills', label: 'Additional Information', type: 'list', order: 4 },
+  { id: 'summary', label: 'Summary', type: 'text', order: 0 },
+  { id: 'experience', label: 'Professional Experience', type: 'entries', order: 1 },
+  { id: 'education', label: 'Education', type: 'entries', order: 2 },
+  { id: 'skills', label: 'Additional Information', type: 'list', order: 3 },
 ];
 
 // Rough one-page approximation used as the hard backstop when trimming a

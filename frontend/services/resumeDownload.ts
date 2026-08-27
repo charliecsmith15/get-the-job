@@ -80,7 +80,7 @@ body {
     width: 100%;
     border-collapse: collapse;
     margin-top: 14pt;
-    margin-bottom: 5pt;
+    margin-bottom: 0;
 }
 .section-head td {
     font-weight: bold;
@@ -91,7 +91,7 @@ body {
     padding: 0 0 1pt 0;
     margin: 0;
 }
-.section-text { font-size: 10.5pt; margin-bottom: 6px; }
+.section-text { font-size: 10.5pt; margin: 0 0 6px 0; }
 .exp-entry { margin-bottom: 14pt; }
 .entry-header {
     width: 100%;

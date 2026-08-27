@@ -578,7 +578,7 @@ export const JobDetail: React.FC = () => {
 
                                             <div className="flex gap-4">
                                                 {/* Left: experience bullet checkboxes */}
-                                                <div className="w-1/2 border border-sand rounded-lg p-3 overflow-y-auto h-[520px] crm-scrollbar">
+                                                <div className="w-1/2 border border-sand rounded-lg p-3 overflow-y-auto h-[800px] crm-scrollbar">
                                                     {resumeSections
                                                         .filter(s => s.id === 'experience')
                                                         .map(section => (
@@ -609,7 +609,7 @@ export const JobDetail: React.FC = () => {
                                                 </div>
 
                                                 {/* Right: full resume preview */}
-                                                <div className="w-1/2 border border-sand rounded-lg p-3 overflow-y-auto h-[520px] crm-scrollbar bg-cream">
+                                                <div className="w-1/2 border border-sand rounded-lg p-3 overflow-y-auto h-[800px] crm-scrollbar bg-cream">
                                                     {renderMarkdown(generatedMarkdown)}
                                                 </div>
                                             </div>

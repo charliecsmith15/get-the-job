@@ -106,7 +106,7 @@ body {
 .edu-entry { margin-bottom: 6px; }
 .edu-school { font-size: 10.5pt; margin: 0; padding: 0; }
 .edu-degree { font-size: 10.5pt; margin: 0; padding: 0; }
-.additional-info p { margin: 0; padding: 0; font-size: 10.5pt; mso-para-margin-top: 0; mso-para-margin-bottom: 0; line-height: 1.15; }
+.additional-info { margin: 0; padding: 0; font-size: 10.5pt; line-height: 1.15; mso-para-margin-top: 0; mso-para-margin-bottom: 0; }
 @page WordSection1 {
     margin-top: 0.85in; margin-bottom: 0.85in;
     margin-left: 0.7in; margin-right: 0.7in;
@@ -204,10 +204,10 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
             }
             if (!sectionLines.length) continue;
 
-            const lineItems = sectionLines.map(l => `<p>${formatCategoryLine(l.content)}</p>`).join('');
+            const lineItems = sectionLines.map(l => formatCategoryLine(l.content)).join('<br>');
             bodyParts.push(
                 `<p class="section-head">${escapeHTML(section.label.toUpperCase())}</p>` +
-                `<div class="additional-info">${lineItems}</div>`
+                `<p class="additional-info">${lineItems}</p>`
             );
         }
     }

@@ -106,7 +106,7 @@ body {
 .edu-entry { margin-bottom: 6px; }
 .edu-school { font-size: 10.5pt; margin: 0; padding: 0; }
 .edu-degree { font-size: 10.5pt; margin: 0; padding: 0; }
-.additional-info p { margin: 2px 0; font-size: 10.5pt; }
+.additional-info p { margin: 0; padding: 0; font-size: 10.5pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto; }
 @page WordSection1 {
     margin-top: 0.85in; margin-bottom: 0.85in;
     margin-left: 0.7in; margin-right: 0.7in;

@@ -95,8 +95,14 @@ export function renderResumeMarkdown(
         if (section.type === 'list') {
             const sectionLines = byOrder(lines.filter(l => l.sectionId === section.id && !l.entryId))
                 .filter(l => !includedLineIds || includedLineIds.has(l.id));
-            // Each line on its own line (not comma-joined) to preserve Category: items format
-            if (sectionLines.length) parts.push(`## ${section.label}\n\n${sectionLines.map(l => l.content).join('\n')}`);
+            if (sectionLines.length) {
+                const formatted = sectionLines.map(l => {
+                    const colon = l.content.indexOf(':');
+                    if (colon > 0) return `**${l.content.slice(0, colon)}:**${l.content.slice(colon + 1)}`;
+                    return l.content;
+                });
+                parts.push(`## ${section.label}\n\n${formatted.join('\n')}`);
+            }
         }
     }
 

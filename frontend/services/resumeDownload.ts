@@ -77,23 +77,13 @@ body {
 }
 .header-contact a { color: #0563C1; text-decoration: underline; }
 .section-head {
-    width: 100%;
-    border-collapse: collapse;
-    border: none;
-    margin-top: 14pt;
-    margin-bottom: 0;
-}
-.section-head td {
     font-weight: bold;
     font-size: 10.5pt;
     text-transform: uppercase;
     letter-spacing: 0.01em;
-    border-top: none;
-    border-left: none;
-    border-right: none;
     border-bottom: 1.5pt solid #000;
+    margin: 14pt 0 0 0;
     padding: 0 0 1pt 0;
-    margin: 0;
 }
 .section-text { font-size: 10.5pt; margin: 0 0 6px 0; }
 .exp-entry { margin-bottom: 14pt; }
@@ -154,7 +144,7 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
             if (!content) continue;
 
             bodyParts.push(
-                `<table class="section-head" border="0"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
+                `<p class="section-head">${escapeHTML(section.label.toUpperCase())}</p>` +
                 `<p class="section-text">${escapeHTML(content)}</p>`
             );
             continue;
@@ -200,7 +190,7 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
 
             if (entryBlocks.length) {
                 bodyParts.push(
-                    `<table class="section-head" border="0"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
+                    `<p class="section-head">${escapeHTML(section.label.toUpperCase())}</p>` +
                     `<div class="entries">${entryBlocks.join('')}</div>`
                 );
             }
@@ -214,7 +204,7 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
 
             const lineItems = sectionLines.map(l => `<p>${formatCategoryLine(l.content)}</p>`).join('');
             bodyParts.push(
-                `<table class="section-head" border="0"><tr><td>${escapeHTML(section.label.toUpperCase())}</td></tr></table>` +
+                `<p class="section-head">${escapeHTML(section.label.toUpperCase())}</p>` +
                 `<div class="additional-info">${lineItems}</div>`
             );
         }
@@ -259,7 +249,7 @@ function markdownToHTML(md: string): string {
         const line = raw.trimEnd();
         if (/^## /.test(line)) {
             flushList();
-            out.push(`<table class="section-head" border="0"><tr><td>${inlineFormat(line.slice(3))}</td></tr></table>`);
+            out.push(`<p class="section-head">${inlineFormat(line.slice(3))}</p>`);
         } else if (/ \|\|\| /.test(line)) {
             flushList();
             const [left, right] = line.split(' ||| ');

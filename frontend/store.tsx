@@ -421,7 +421,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (!dbConfig.enabled) { setResumeIsDirty(false); return; }
         setSyncStatus('syncing');
         try {
-            await apiClient.updateAccountProfile(accountProfile);
+            try { await apiClient.updateAccountProfile(accountProfile); } catch (e) { console.error('[saveResume] profile save failed:', e); }
 
             for (const tb of resumeTextBlocks) {
                 await apiClient.updateResumeText(tb.sectionId, tb.content);

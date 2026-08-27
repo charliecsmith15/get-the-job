@@ -57,6 +57,11 @@
   <button id="save">Save settings</button>
   <div id="status"></div>
 
+  <hr style="margin:32px 0 24px;border:none;border-top:1px solid #d8cdb8;">
+  <label style="font-weight:600;font-size:13px;">Google OAuth redirect URI</label>
+  <p class="field-hint" style="margin-bottom:8px;">Add this URL to your OAuth client's <strong>Authorized redirect URIs</strong> in Google Cloud Console so the extension can sign in.</p>
+  <code id="redirectUrl" style="display:block;font-size:12px;background:#fff;border:1px solid #d8cdb8;border-radius:6px;padding:8px 10px;word-break:break-all;">Loading…</code>
+
   <script type="module" src="options.js"></script>
 </body>
 </html>

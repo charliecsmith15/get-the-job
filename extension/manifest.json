@@ -29,6 +29,6 @@
     "matches": ["https://*/*", "http://localhost/*"]
   }],
   "options_page": "options.html",
-  "permissions": ["storage", "activeTab", "identity", "identity.email"],
+  "permissions": ["storage", "activeTab", "identity"],
   "optional_host_permissions": ["https://*/*", "http://localhost/*"]
 }

@@ -20,10 +20,28 @@ function closePanel() {
   window.parent.postMessage('gtj-close', '*');
 }
 
+function extractCompanyFromUrl(url) {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, '').toLowerCase();
+    const parts = u.pathname.split('/').filter(Boolean);
+    // ATS platforms where company name is in the path
+    if (/greenhouse\.io/.test(host)) return parts[0] || host.split('.')[0];
+    if (/lever\.co/.test(host)) return parts[0] || '';
+    if (/ashbyhq\.com/.test(host)) return parts[0] || '';
+    // ATS platforms where company name is the subdomain
+    if (/myworkdayjobs\.com/.test(host)) return host.split('.')[0];
+    // Generic: first segment of hostname
+    return host.split('.')[0];
+  } catch {
+    return '';
+  }
+}
+
 async function getActiveTab() {
   const params = new URLSearchParams(location.search);
   const url = params.get('url');
-  return url ? { url, utmSource: params.get('utmSource') || '', description: params.get('description') || '' } : null;
+  return url ? { url, source: params.get('source') || '' } : null;
 }
 
 document.getElementById('close').addEventListener('click', closePanel);
@@ -56,13 +74,9 @@ async function init() {
 
     if (tab) {
       document.getElementById('url').value = tab.url || '';
-      if (tab.utmSource) document.getElementById('source').value = normalizeSource(tab.utmSource);
-      if (tab.description) document.getElementById('description').value = tab.description;
-      try {
-        const host = new URL(tab.url).hostname.replace(/^www\./, '');
-        const name = host.split('.')[0];
-        document.getElementById('company').value = name.charAt(0).toUpperCase() + name.slice(1);
-      } catch {}
+      if (tab.source) document.getElementById('source').value = normalizeSource(tab.source);
+      const company = extractCompanyFromUrl(tab.url);
+      if (company) document.getElementById('company').value = company.charAt(0).toUpperCase() + company.slice(1);
     }
 
     showState('form');

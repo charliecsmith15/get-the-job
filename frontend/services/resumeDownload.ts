@@ -305,7 +305,7 @@ export function downloadResume(
         : buildHTMLFromMarkdown(content, baseName);
 
     if (format === 'doc') {
-        triggerDownload(new Blob([html], { type: 'application/msword' }), `${safeBase}.doc`);
+        triggerDownload(new Blob([html], { type: 'application/octet-stream' }), `${safeBase}.doc`);
         return;
     }
 

@@ -185,7 +185,7 @@ export const JobDetail: React.FC = () => {
         if (!generatedMarkdown) return;
         downloadResume(
             generatedMarkdown,
-            `${job.company}_tailored_resume`,
+            `${job.company}_${accountProfile.firstName}_${accountProfile.lastName}`,
             format,
             { sections: resumeSections, textBlocks: resumeTextBlocks, entries: resumeEntries, lines: resumeLines, includedLineIds, accountProfile }
         );

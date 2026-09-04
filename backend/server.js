@@ -863,10 +863,13 @@ app.post('/internal/weekly-digest', async (req, res) => {
   if (!DIGEST_GMAIL_PASS) return res.status(503).json({ error: 'DIGEST_GMAIL_PASS not set' });
   if (!GEMINI_API_KEY) return res.status(503).json({ error: 'GEMINI_API_KEY not set' });
 
-  res.json({ status: 'started' });
-  runWeeklyDigest(pool, DIGEST_GMAIL_PASS, GEMINI_API_KEY).catch(err =>
-    console.error('[Digest] Unhandled error:', err)
-  );
+  try {
+    await runWeeklyDigest(pool, DIGEST_GMAIL_PASS, GEMINI_API_KEY);
+    res.json({ status: 'ok' });
+  } catch (err) {
+    console.error('[Digest] Unhandled error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Server ───────────────────────────────────────────────────────────────────

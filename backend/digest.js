@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 const STATUSES = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
 const WEEKLY_TARGET = 30;
 const FROM_EMAIL = 'charlie@workbench-data.com';
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-1.5-flash';
 
 export async function runWeeklyDigest(pool, gmailPass, geminiKey) {
   const { rows: accounts } = await pool.query(
@@ -94,14 +94,19 @@ Respond in JSON with exactly these two keys:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.4 },
+        generationConfig: { temperature: 0.4 },
       }),
     }
   );
 
-  if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Gemini API error: ${res.status} — ${errBody.slice(0, 200)}`);
+  }
   const data = await res.json();
-  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
+  let raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
+  // Strip markdown code fences if the model wraps the JSON
+  raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
   const parsed = JSON.parse(raw);
   return [parsed.focus || '—', parsed.resources || '—'];
 }

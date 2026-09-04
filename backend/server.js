@@ -13,6 +13,7 @@ import fetch from 'node-fetch';
 import rateLimit from 'express-rate-limit';
 import { WebSocketServer, WebSocket } from 'ws';
 import { RESUME_SECTIONS, TOTAL_CHAR_BUDGET, getSection } from './resumeSections.js';
+import { runWeeklyDigest } from './digest.js';
 
 const app = express();
 app.use(cors({
@@ -349,6 +350,8 @@ const INSTANCE_CONNECTION_NAME = process.env.INSTANCE_CONNECTION_NAME;
 const DB_NAME = process.env.DB_NAME || 'jobsearch';
 const DB_USER = process.env.DB_USER || 'jobsearch';
 const DB_PASS = process.env.DB_PASS;
+const DIGEST_GMAIL_PASS = process.env.DIGEST_GMAIL_PASS;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 let pool = null;
 if (INSTANCE_CONNECTION_NAME && DB_PASS) {
@@ -474,12 +477,30 @@ app.post('/api/jobs', async (req, res) => {
       [j.id, req.accountId, j.title, j.company, j.status, j.url, j.description, j.dateAdded, j.matchScore || null, j.matchAnalysis, j.location,
        JSON.stringify(j.tags ?? []), j.dateApplied || null, JSON.stringify(j.customFields ?? {}), j.source || null]
     );
+    if (j.status) {
+      await pool.query(
+        `INSERT INTO job_status_history (id, "jobId", "accountId", "fromStatus", "toStatus") VALUES ($1,$2,$3,$4,$5)`,
+        [crypto.randomUUID(), j.id, req.accountId, null, j.status]
+      );
+    }
     res.status(201).json(j);
   } catch (e) { dbError(res, e); }
 });
 app.put('/api/jobs/:id', async (req, res) => {
   try {
     const j = req.body;
+    if (j.status) {
+      const { rows } = await pool.query(
+        `SELECT status FROM jobs WHERE id=$1 AND "accountId"=$2`,
+        [req.params.id, req.accountId]
+      );
+      if (rows.length && rows[0].status !== j.status) {
+        await pool.query(
+          `INSERT INTO job_status_history (id, "jobId", "accountId", "fromStatus", "toStatus") VALUES ($1,$2,$3,$4,$5)`,
+          [crypto.randomUUID(), req.params.id, req.accountId, rows[0].status, j.status]
+        );
+      }
+    }
     await pool.query(
       `UPDATE jobs SET
          title        = COALESCE($3, title),
@@ -830,6 +851,22 @@ app.delete('/api/job-analyses/:jobId', async (req, res) => {
     await pool.query('DELETE FROM job_analyses WHERE "jobId"=$1 AND "accountId"=$2', [req.params.jobId, req.accountId]);
     res.status(204).end();
   } catch (e) { dbError(res, e); }
+});
+
+// ── Internal: weekly digest ──────────────────────────────────────────────────
+app.post('/internal/weekly-digest', async (req, res) => {
+  const header = req.headers['x-internal-key'];
+  if (!PROXY_HEADER || header !== PROXY_HEADER) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  if (!DIGEST_GMAIL_PASS) return res.status(503).json({ error: 'DIGEST_GMAIL_PASS not set' });
+  if (!GEMINI_API_KEY) return res.status(503).json({ error: 'GEMINI_API_KEY not set' });
+
+  res.json({ status: 'started' });
+  runWeeklyDigest(pool, DIGEST_GMAIL_PASS, GEMINI_API_KEY).catch(err =>
+    console.error('[Digest] Unhandled error:', err)
+  );
 });
 
 // ── Server ───────────────────────────────────────────────────────────────────

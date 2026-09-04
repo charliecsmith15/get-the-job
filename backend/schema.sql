@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS accounts (
     last_name VARCHAR(255),
     display_email VARCHAR(255),
     linkedin VARCHAR(500),
-    phone_number VARCHAR(50)
+    phone_number VARCHAR(50),
+    notification_email VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS jobs (
@@ -144,6 +145,18 @@ CREATE TABLE IF NOT EXISTS interview_questions (
     "dateAdded" TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS interview_questions_account_idx ON interview_questions ("accountId");
+
+-- Records every job status transition for the weekly digest scorecard.
+-- fromStatus NULL = job was first created with this status.
+CREATE TABLE IF NOT EXISTS job_status_history (
+    id           VARCHAR(50) PRIMARY KEY,
+    "jobId"      VARCHAR(50) NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    "accountId"  INTEGER NOT NULL,
+    "fromStatus" VARCHAR(50),
+    "toStatus"   VARCHAR(50) NOT NULL,
+    "changedAt"  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS job_status_history_account_idx ON job_status_history ("accountId", "changedAt");
 
 CREATE TABLE IF NOT EXISTS job_analyses (
     id VARCHAR(50) PRIMARY KEY,

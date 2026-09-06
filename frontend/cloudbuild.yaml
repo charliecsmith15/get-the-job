@@ -1,4 +1,13 @@
 steps:
+  # Fetch PROXY_HEADER from Secret Manager and write it into frontend/.env.local for Vite
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo "PROXY_HEADER=$(gcloud secrets versions access latest --secret=proxy-header --project=workbench-data-ops)" \
+          > frontend/.env.local
+
   # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/careernexus', 'frontend/']

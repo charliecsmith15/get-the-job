@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 const STATUSES = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
 const WEEKLY_TARGET = 30;
 const FROM_EMAIL = 'charlie@workbench-data.com';
-const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_MODEL = 'gemini-3.6-flash';
 
 export async function runWeeklyDigest(pool, gmailPass, geminiKey) {
   const { rows: accounts } = await pool.query(
@@ -59,7 +59,13 @@ async function sendDigestForAccount(pool, transporter, geminiKey, account) {
   let resources = null;
   if (journalEntries.length > 0) {
     const journalText = journalEntries.map(j => `[${j.date}]\n${j.content}`).join('\n\n---\n\n');
-    [focus, resources] = await generateInsights(geminiKey, journalText);
+    try {
+      [focus, resources] = await generateInsights(geminiKey, journalText);
+    } catch (err) {
+      console.error(`[Digest] Gemini failed for account ${accountId}:`, err.message);
+      focus = 'Insights unavailable this week — journal entries were found but AI analysis failed.';
+      resources = 'Insights unavailable this week — journal entries were found but AI analysis failed.';
+    }
   }
 
   const weekOf = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });

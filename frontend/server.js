@@ -55,6 +55,14 @@ app.use(async (req, res, next) => {
     }
 });
 
+// Serve proxy interceptor with __PROXY_HEADER__ substituted at runtime
+app.get('/vertex-ai-proxy-interceptor.js', async (req, res) => {
+    const filePath = path.join(__dirname, 'vertex-ai-proxy-interceptor.js');
+    const source = await fs.readFile(filePath, 'utf8');
+    const injected = source.replace(/__PROXY_HEADER__/g, JSON.stringify(process.env.PROXY_HEADER || ''));
+    res.type('application/javascript').send(injected);
+});
+
 // Config endpoint — returns server-side env vars the client needs
 app.get('/config', (req, res) => {
     let backendUrl = (process.env.BACKEND_URL || '').replace(/\/$/, '');

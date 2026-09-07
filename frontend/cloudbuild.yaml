@@ -37,7 +37,7 @@ images:
 substitutions:
   _GOOGLE_CLOUD_LOCATION: us-central1
   _GOOGLE_API_KEY: ''
-  _BACKEND_URL: ''
+  _BACKEND_URL: 'https://jobsearch-backend-948539209903.us-central1.run.app'
   # Must match backend/cloudbuild.yaml's _ALLOWED_EMAILS exactly — this only
   # gates the sign-in screen client-side; the backend enforces the same list
   # server-side on every request. Add your demo account's email here once

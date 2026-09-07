@@ -352,6 +352,7 @@ const DB_USER = process.env.DB_USER || 'jobsearch';
 const DB_PASS = process.env.DB_PASS;
 const DIGEST_GMAIL_PASS = process.env.DIGEST_GMAIL_PASS;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const DIGEST_INTERNAL_KEY = process.env.DIGEST_INTERNAL_KEY;
 
 let pool = null;
 if (INSTANCE_CONNECTION_NAME && DB_PASS) {
@@ -856,7 +857,7 @@ app.delete('/api/job-analyses/:jobId', async (req, res) => {
 // ── Internal: weekly digest ──────────────────────────────────────────────────
 app.post('/internal/weekly-digest', async (req, res) => {
   const header = req.headers['x-internal-key'];
-  if (!PROXY_HEADER || header !== PROXY_HEADER) {
+  if (!DIGEST_INTERNAL_KEY || header !== DIGEST_INTERNAL_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   if (!pool) return res.status(503).json({ error: 'Database not configured' });

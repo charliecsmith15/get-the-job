@@ -219,7 +219,6 @@ function buildHTMLFromData(data: StructuredResumeData, title: string): string {
 <head>
   <meta charset="utf-8">
   <title>${escapeHTML(title)}</title>
-  <xml><w:WordDocument><w:View>Normal</w:View></w:WordDocument></xml>
   <style>${RESUME_STYLES}</style>
 </head>
 <body>

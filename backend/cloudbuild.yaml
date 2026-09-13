@@ -18,22 +18,22 @@ steps:
           --port 8080 \
           --add-cloudsql-instances "${_INSTANCE_CONNECTION_NAME}" \
           --set-env-vars "^;^GOOGLE_CLOUD_PROJECT=$PROJECT_ID;GOOGLE_CLOUD_LOCATION=${_GOOGLE_CLOUD_LOCATION};INSTANCE_CONNECTION_NAME=${_INSTANCE_CONNECTION_NAME};DB_NAME=${_DB_NAME};DB_USER=${_DB_USER};GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID};ALLOWED_EMAILS=${_ALLOWED_EMAILS}" \
-          --set-secrets "PROXY_HEADER=proxy-header:latest,DB_PASS=db-jobsearch-charlie-pass:latest,DIGEST_GMAIL_PASS=digest-gmail-app-password:latest,GEMINI_API_KEY=digest-gemini-api-key:latest,DIGEST_INTERNAL_KEY=digest-internal-key:latest"
+          --set-secrets "PROXY_HEADER=proxy-header:latest,DB_PASS=db-jobsearch-charlie-pass:latest,DIGEST_GMAIL_PASS=digest-gmail-app-password:latest,GEMINI_API_KEY=digest_gemini_api_key:latest,DIGEST_INTERNAL_KEY=digest-internal-key:latest"
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/jobsearch/jobsearch-backend'
 
 substitutions:
   _GOOGLE_CLOUD_LOCATION: us-central1
-  _INSTANCE_CONNECTION_NAME: ''
+  _INSTANCE_CONNECTION_NAME: 'job-search-app-508319:us-central1:jobsearch-db'
   _DB_NAME: jobsearch
   _DB_USER: jobsearch
   # Must match frontend's GOOGLE_CLIENT_ID exactly — it's the OAuth audience
   # the backend verifies Google ID tokens against.
-  _GOOGLE_CLIENT_ID: '948539209903-qku75f835du8coue8a6ld6g29aocif8k.apps.googleusercontent.com'
+  _GOOGLE_CLIENT_ID: '111263041275-uohfrin306iaqnbetpl9ckk3k42sthed.apps.googleusercontent.com'
   # Comma-separated list of emails allowed to sign in. Include your demo
   # account's email here once you've created it.
-  _ALLOWED_EMAILS: 'charlie@workbench-data.com,rankin@workbench-data.com,charlie@charliecsmith.com'
+  _ALLOWED_EMAILS: 'charlie@workbench-data.com,rankin@workbench-data.com,charlie@charliecsmith.com,ccsmith1534@gmail.com'
 
 
 options:

@@ -64,7 +64,7 @@
     }
   }
 
-  const BACKEND_URL = 'https://jobsearch-backend-948539209903.us-central1.run.app';
+  const BACKEND_URL = 'https://jobsearch-backend-6gcehd2gma-uc.a.run.app';
 
   console.log('[Vertex AI Proxy Shim] Initialized. Intercepting for Cloud AI API URLs');
 

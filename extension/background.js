@@ -1,4 +1,4 @@
-const GOOGLE_CLIENT_ID = '948539209903-qku75f835du8coue8a6ld6g29aocif8k.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '111263041275-uohfrin306iaqnbetpl9ckk3k42sthed.apps.googleusercontent.com';
 const TOKEN_CACHE_KEY = 'gtj_id_token_cache';
 
 function parseJwtPayload(token) {

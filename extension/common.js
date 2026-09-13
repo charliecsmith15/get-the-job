@@ -2,7 +2,7 @@
 
 // Mirrors the default in backend/frontend server.js (`ALLOWED_EMAILS`), so a
 // fresh install matches the web app's default allowlist out of the box.
-export const DEFAULT_ALLOWED_EMAILS = 'charlie@workbench-data.com,rankin@workbench-data.com';
+export const DEFAULT_ALLOWED_EMAILS = 'charlie@workbench-data.com,rankin@workbench-data.com,charlie@charliecsmith.com,ccsmith1534@gmail.com';
 
 export const STORAGE_KEYS = {
   backendUrl: 'gtj_backendUrl',

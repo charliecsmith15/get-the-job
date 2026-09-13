@@ -19,7 +19,7 @@ const app = express();
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin) return callback(null, true); // allow server-to-server / curl
-        const allowed = origin.endsWith('.run.app') || origin === 'https://jobsearch.workbench-data.com' || origin === 'https://job-bench.com' || origin === 'http://localhost:8080' || origin === 'http://localhost:3000'
+        const allowed = origin.endsWith('.run.app') || origin === 'https://jobs.charliecsmith.com' || origin === 'https://jobsearch.workbench-data.com' || origin === 'https://job-bench.com' || origin === 'http://localhost:8080' || origin === 'http://localhost:3000'
             || origin.startsWith('chrome-extension://'); // Get the Job companion Chrome extension
         callback(allowed ? null : new Error('CORS'), allowed);
     }

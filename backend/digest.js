@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 
 const STATUSES = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
 const WEEKLY_TARGET = 30;
-const FROM_EMAIL = 'charlie@workbench-data.com';
+const FROM_EMAIL = 'charlie@charliecsmith.com';
 const GEMINI_MODEL = 'gemini-3.6-flash';
 
 export async function runWeeklyDigest(pool, gmailPass, geminiKey) {

@@ -39,7 +39,7 @@ app.use(async (req, res, next) => {
             'process.env.GOOGLE_CLOUD_LOCATION': JSON.stringify(process.env.GOOGLE_CLOUD_LOCATION || 'us-central1'),
             'process.env.GOOGLE_CLIENT_ID': JSON.stringify(process.env.GOOGLE_CLIENT_ID || ''),
             'process.env.GOOGLE_API_KEY': JSON.stringify(process.env.GOOGLE_API_KEY || ''),
-            'process.env.ALLOWED_EMAILS': JSON.stringify(process.env.ALLOWED_EMAILS || 'charlie@workbench-data.com,rankin@workbench-data.com,charlie@charliecsmith.com,ccsmith1534@gmail.com'),
+            'process.env.ALLOWED_EMAILS': JSON.stringify(process.env.ALLOWED_EMAILS || 'charlie@charliecsmith.com,ccsmith1534@gmail.com'),
             'process.env.BACKEND_URL': JSON.stringify(process.env.BACKEND_URL || ''),
         };
         const result = await transform(source, {

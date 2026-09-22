@@ -112,6 +112,7 @@ export const createApiClient = (baseUrl: string) => {
         // Notes
         getNotes: (): Promise<Note[]> => fetch(`${baseUrl}/notes`, { headers }).then(handleResponse),
         createNote: (note: Note): Promise<void> => fetch(`${baseUrl}/notes`, { method: 'POST', headers, body: JSON.stringify(note) }).then(handleResponse),
+        updateNote: (note: Note): Promise<Note> => fetch(`${baseUrl}/notes/${note.id}`, { method: 'PUT', headers, body: JSON.stringify(note) }).then(handleResponse),
         deleteNote: (id: string): Promise<void> => fetch(`${baseUrl}/notes/${id}`, { method: 'DELETE', headers }).then(handleResponse),
         
         // Resume — a single structured resume per account

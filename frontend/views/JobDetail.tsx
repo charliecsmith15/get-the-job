@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button, Badge, Textarea, Input, renderBold, renderMarkdown } from '../components/UI';
-import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X, ScrollText, Mic, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Trash2, Sparkles, MessageSquare, FileText, CheckCircle2, XCircle, Loader2, Target, Download, Save, MapPin, Calendar, Tag, Plus, X, ScrollText, Mic, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { analyzeJobMatch, generateInterviewQuestions, selectResumeLines, getRelevantTechnicalQuestions, RESUME_ADVICE_SYSTEM_INSTRUCTION, RESUME_ADVICE_USER_PROMPT } from '../services/gemini';
 import { renderResumeMarkdown, trimToBudget, getCandidateLines } from '../services/resumeRenderer';
 import { downloadResume, DownloadFormat } from '../services/resumeDownload';
@@ -10,7 +10,7 @@ import { Job, ResumeEntry, ResumeLine } from '../types';
 
 export const JobDetail: React.FC = () => {
     const {
-        jobs, notes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, deleteNote, setJobAnalysis, jobSources, addInterviewQuestion,
+        jobs, notes, preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, selectedJobId, navigate, updateJob, deleteJob, addNote, updateNote, deleteNote, setJobAnalysis, jobSources, addInterviewQuestion,
         accountProfile, resumeSections, resumeCharBudget, resumeTextBlocks, resumeEntries, resumeLines, resumeMarkdown, resumeGenerations, saveResumeGeneration,
         addResumeLine, deleteResumeLine,
     } = useAppStore();
@@ -23,6 +23,8 @@ export const JobDetail: React.FC = () => {
     const [customFieldsList, setCustomFieldsList] = useState<{key: string, value: string}[]>([]);
 
     const [newNote, setNewNote] = useState({ type: 'General' as const, title: '', content: '' });
+    const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+    const [editNoteForm, setEditNoteForm] = useState({ type: 'General' as 'General' | 'Call' | 'Interview' | 'Assignment', title: '', content: '' });
     
     // AI States
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -449,18 +451,70 @@ export const JobDetail: React.FC = () => {
                             ) : (
                                 jobNotes.map(note => (
                                     <Card key={note.id} className="p-4">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="flex items-center space-x-2">
-                                                <Badge color={note.type === 'Interview' ? 'yellow' : note.type === 'Assignment' ? 'blue' : note.type === 'Call' ? 'green' : 'gray'}>{note.type}</Badge>
-                                                <span className="text-xs text-taupe">{new Date(note.date).toLocaleDateString()}</span>
+                                        {editingNoteId === note.id ? (
+                                            <div className="space-y-3">
+                                                <select
+                                                    className="w-full px-3 py-2 border border-sand rounded-lg bg-paper text-ink crm-focus text-sm"
+                                                    value={editNoteForm.type}
+                                                    onChange={e => setEditNoteForm({ ...editNoteForm, type: e.target.value as any })}
+                                                >
+                                                    <option value="General">General Note</option>
+                                                    <option value="Call">Call Notes</option>
+                                                    <option value="Interview">Interview Prep/Notes</option>
+                                                    <option value="Assignment">Take-home Assignment</option>
+                                                </select>
+                                                <Input
+                                                    placeholder="Note Title"
+                                                    value={editNoteForm.title}
+                                                    onChange={e => setEditNoteForm({ ...editNoteForm, title: e.target.value })}
+                                                />
+                                                <Textarea
+                                                    rows={6}
+                                                    placeholder="Write your note body here..."
+                                                    value={editNoteForm.content}
+                                                    onChange={e => setEditNoteForm({ ...editNoteForm, content: e.target.value })}
+                                                />
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        className="flex-1"
+                                                        onClick={() => {
+                                                            updateNote({ ...note, ...editNoteForm });
+                                                            setEditingNoteId(null);
+                                                        }}
+                                                        disabled={!editNoteForm.title.trim() || !editNoteForm.content.trim()}
+                                                    >
+                                                        Save
+                                                    </Button>
+                                                    <Button variant="secondary" onClick={() => setEditingNoteId(null)}>Cancel</Button>
+                                                </div>
                                             </div>
-                                            <button onClick={() => deleteNote(note.id)} className="text-taupe hover:text-danger"><Trash2 className="w-4 h-4" /></button>
-                                        </div>
-                                        <h4 className="font-semibold text-ink mb-1 flex items-center">
-                                            {note.title}
-                                            {note.isAiGenerated && <Sparkles className="w-3 h-3 ml-2 text-wood" title="AI Generated" />}
-                                        </h4>
-                                        <p className="text-ink whitespace-pre-wrap text-sm">{note.content}</p>
+                                        ) : (
+                                            <>
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div className="flex items-center space-x-2">
+                                                        <Badge color={note.type === 'Interview' ? 'yellow' : note.type === 'Assignment' ? 'blue' : note.type === 'Call' ? 'green' : 'gray'}>{note.type}</Badge>
+                                                        <span className="text-xs text-taupe">{new Date(note.date).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingNoteId(note.id);
+                                                                setEditNoteForm({ type: note.type, title: note.title, content: note.content });
+                                                            }}
+                                                            className="text-taupe hover:text-ink"
+                                                        >
+                                                            <Pencil className="w-4 h-4" />
+                                                        </button>
+                                                        <button onClick={() => deleteNote(note.id)} className="text-taupe hover:text-danger"><Trash2 className="w-4 h-4" /></button>
+                                                    </div>
+                                                </div>
+                                                <h4 className="font-semibold text-ink mb-1 flex items-center">
+                                                    {note.title}
+                                                    {note.isAiGenerated && <Sparkles className="w-3 h-3 ml-2 text-wood" title="AI Generated" />}
+                                                </h4>
+                                                <p className="text-ink whitespace-pre-wrap text-sm">{note.content}</p>
+                                            </>
+                                        )}
                                     </Card>
                                 ))
                             )}

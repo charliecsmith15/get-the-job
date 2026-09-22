@@ -549,6 +549,16 @@ app.post('/api/notes', async (req, res) => {
     res.status(201).json(n);
   } catch (e) { dbError(res, e); }
 });
+app.put('/api/notes/:id', async (req, res) => {
+  try {
+    const n = req.body;
+    await pool.query(
+      `UPDATE notes SET type=$1, title=$2, content=$3 WHERE id=$4 AND "accountId"=$5`,
+      [n.type, n.title, n.content, req.params.id, req.accountId]
+    );
+    res.json(n);
+  } catch (e) { dbError(res, e); }
+});
 app.delete('/api/notes/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM notes WHERE id=$1 AND "accountId"=$2', [req.params.id, req.accountId]);

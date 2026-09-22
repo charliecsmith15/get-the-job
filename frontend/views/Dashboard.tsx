@@ -1,13 +1,19 @@
 import React, { useMemo } from 'react';
 import { useAppStore } from '../store';
 import { Card, Button } from '../components/UI';
-import { Briefcase, FileText, Target, Plus, ChevronRight } from 'lucide-react';
+import { Briefcase, Target, XCircle, Plus, ChevronRight } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 
 const COLORS = ['#9a8d7a', '#7f927c', '#b7844d', '#31473a', '#9d4c45']; // Saved, Applied, Interviewing, Offer, Rejected
 
 export const Dashboard: React.FC = () => {
-    const { jobs, resumeGenerations, navigate } = useAppStore();
+    const { jobs, navigate } = useAppStore();
+
+    const appliedCount = useMemo(() => jobs.filter(j => j.status !== 'Saved').length, [jobs]);
+    const interviewingCount = useMemo(() => jobs.filter(j => j.status === 'Interviewing').length, [jobs]);
+    const rejectedCount = useMemo(() => jobs.filter(j => j.status === 'Rejected').length, [jobs]);
+    const interviewPct = appliedCount > 0 ? Math.round((interviewingCount / appliedCount) * 100) : 0;
+    const rejectionPct = appliedCount > 0 ? Math.round((rejectedCount / appliedCount) * 100) : 0;
 
     const statusData = useMemo(() => {
         const counts = { Saved: 0, Applied: 0, Interviewing: 0, Offer: 0, Rejected: 0 };
@@ -43,18 +49,22 @@ export const Dashboard: React.FC = () => {
                     </div>
                     <div>
                         <p className="text-sm font-medium text-taupe">Active Interviews</p>
-                        <p className="text-2xl font-bold text-ink">
-                            {jobs.filter(j => j.status === 'Interviewing').length}
-                        </p>
+                        <div className="flex items-baseline gap-2">
+                            <p className="text-2xl font-bold text-ink">{interviewingCount}</p>
+                            <p className="text-sm font-medium text-taupe">{interviewPct}% interview rate</p>
+                        </div>
                     </div>
                 </Card>
                 <Card className="p-6 flex items-center space-x-4">
                     <div className="p-3 bg-cream text-forest-soft rounded-lg border border-sand">
-                        <FileText className="w-6 h-6" />
+                        <XCircle className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-sm font-medium text-taupe">Tailored Resumes</p>
-                        <p className="text-2xl font-bold text-ink">{resumeGenerations.length}</p>
+                        <p className="text-sm font-medium text-taupe">Rejections</p>
+                        <div className="flex items-baseline gap-2">
+                            <p className="text-2xl font-bold text-ink">{rejectedCount}</p>
+                            <p className="text-sm font-medium text-taupe">{rejectionPct}% rejection rate</p>
+                        </div>
                     </div>
                 </Card>
             </div>

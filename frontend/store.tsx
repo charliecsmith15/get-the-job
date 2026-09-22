@@ -34,6 +34,7 @@ interface AppContextType extends AppState {
     updateJob: (id: string, updates: Partial<Job>) => void;
     deleteJob: (id: string) => void;
     addNote: (note: Omit<Note, 'id' | 'date'>) => void;
+    updateNote: (note: Note) => void;
     deleteNote: (id: string) => void;
     updateResumeText: (sectionId: string, content: string) => void;
     saveResumeRawImport: (content: string) => void;
@@ -312,6 +313,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setSyncStatus('syncing');
             try {
                 await apiClient.createNote(newNote);
+                setSyncStatus('idle');
+            } catch (e) {
+                console.error(e);
+                setSyncStatus('error');
+            }
+        }
+    };
+
+    const updateNote = async (note: Note) => {
+        setNotes(prev => prev.map(n => n.id === note.id ? note : n));
+
+        if (dbConfig.enabled) {
+            setSyncStatus('syncing');
+            try {
+                await apiClient.updateNote(note);
                 setSyncStatus('idle');
             } catch (e) {
                 console.error(e);
@@ -674,7 +690,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             preferences, contextResources, journalEntries, interviewQuestions, jobAnalyses, jobSources,
             currentView, selectedJobId, dbConfig, syncStatus,
             updateAccountProfile,
-            addJob, updateJob, deleteJob, addNote, deleteNote,
+            addJob, updateJob, deleteJob, addNote, updateNote, deleteNote,
             updateResumeText, saveResumeRawImport,
             addResumeEntry, updateResumeEntry, deleteResumeEntry,
             addResumeLine, updateResumeLine, deleteResumeLine,
